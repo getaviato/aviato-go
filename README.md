@@ -194,3 +194,42 @@ pnpm exec nx run @aviato/fixture-gin:conformance   # the conformance suite again
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Ready-to-use provider widgets
+
+Use the typed `StripePlugin` implementation of `IntegrationPlugin` to register read-only
+Stripe customer, subscription and invoice widgets with a local ID
+column or a `belongsTo` relation. Credentials live in the **customer agent environment**;
+SDK declarations contain only the environment variable name. The browser calls the
+customer agent directly, and provider data does not pass through Aviato infrastructure.
+
+See the [provider widget guide](https://docs.getaviato.com/docs/integrations/widgets)
+for registration examples and exact key permissions. Restricted key prefixes do not prove
+read-only permissions: the operator must configure Read/None permissions in Stripe and
+confirm `readOnly`; the adapter itself only sends GET requests.
+
+## Zendesk widgets
+
+```go
+zendesk, err := aviato.NewZendeskPlugin(aviato.ZendeskPluginOptions{
+    Subdomain: "northstar", CredentialEnv: "ZENDESK_WIDGET_TOKEN", ReadOnly: true,
+})
+if err != nil { return err }
+zendesk.Tickets(aviato.ZendeskUserWidget{
+    Collection: "customers", Name: "support",
+    UserID: aviato.RecordBinding{Field: "zendesk_user_id"},
+})
+if err := plugin.Use(zendesk); err != nil { return err }
+```
+
+The typed integration also supports user profiles and individual tickets. Bind to a
+local ID column or one belongsTo relation. Install a customer agent with Zendesk
+support before using these APIs. These examples require core SDK 0.3.0 (and NestJS adapter 0.2.0 when used).
+SDK releases do not publish agent binaries.
+
+Store the OAuth token on the **customer agent**, with `users:read` / `tickets:read`
+scopes. Before each read, the agent verifies actual scopes and rejects write-enabled
+tokens. Only the subdomain label and credential environment-variable name belong
+in SDK configuration. No provider credentials or responses pass through Aviato's
+control plane. See the [Zendesk guide](https://docs.getaviato.com/integrations/zendesk)
+for all methods, permissions and release requirements.

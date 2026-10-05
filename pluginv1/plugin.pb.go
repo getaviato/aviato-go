@@ -462,7 +462,9 @@ type Manifest struct {
 	// True when the plugin implements DatasourceService (custom collections).
 	Datasource bool `protobuf:"varint,12,opt,name=datasource,proto3" json:"datasource,omitempty"`
 	// Declarative record summaries. No executable code or external assets.
-	Summaries     []*SummaryDefinition `protobuf:"bytes,13,rep,name=summaries,proto3" json:"summaries,omitempty"`
+	Summaries []*SummaryDefinition `protobuf:"bytes,13,rep,name=summaries,proto3" json:"summaries,omitempty"`
+	// Customer-agent integrations. Credential values must never appear in the manifest.
+	Widgets       []*WidgetDefinition `protobuf:"bytes,14,rep,name=widgets,proto3" json:"widgets,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -584,6 +586,13 @@ func (x *Manifest) GetDatasource() bool {
 func (x *Manifest) GetSummaries() []*SummaryDefinition {
 	if x != nil {
 		return x.Summaries
+	}
+	return nil
+}
+
+func (x *Manifest) GetWidgets() []*WidgetDefinition {
+	if x != nil {
+		return x.Widgets
 	}
 	return nil
 }
@@ -4347,6 +4356,127 @@ func (x *ListChangesResponse) GetHasMore() bool {
 	return false
 }
 
+// Ready-to-use read-only record integrations, executed on the customer agent.
+type WidgetDefinition struct {
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	Collection string                 `protobuf:"bytes,1,opt,name=collection,proto3" json:"collection,omitempty"`
+	Name       string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Title      string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	Provider   string                 `protobuf:"bytes,4,opt,name=provider,proto3" json:"provider,omitempty"`
+	Resource   string                 `protobuf:"bytes,5,opt,name=resource,proto3" json:"resource,omitempty"`
+	// Local column containing the provider ID, optionally on a belongsTo relation.
+	BindingField    string `protobuf:"bytes,6,opt,name=binding_field,json=bindingField,proto3" json:"binding_field,omitempty"`
+	BindingRelation string `protobuf:"bytes,7,opt,name=binding_relation,json=bindingRelation,proto3" json:"binding_relation,omitempty"`
+	// Environment variable on the customer agent, never the credential itself.
+	CredentialEnv string `protobuf:"bytes,8,opt,name=credential_env,json=credentialEnv,proto3" json:"credential_env,omitempty"`
+	// Explicit operator confirmation that the credential has only read permissions.
+	ReadOnly bool `protobuf:"varint,9,opt,name=read_only,json=readOnly,proto3" json:"read_only,omitempty"`
+	// Non-secret provider tenant identifier (for example a Zendesk subdomain).
+	Account       string `protobuf:"bytes,10,opt,name=account,proto3" json:"account,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WidgetDefinition) Reset() {
+	*x = WidgetDefinition{}
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[65]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WidgetDefinition) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WidgetDefinition) ProtoMessage() {}
+
+func (x *WidgetDefinition) ProtoReflect() protoreflect.Message {
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[65]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WidgetDefinition.ProtoReflect.Descriptor instead.
+func (*WidgetDefinition) Descriptor() ([]byte, []int) {
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{65}
+}
+
+func (x *WidgetDefinition) GetCollection() string {
+	if x != nil {
+		return x.Collection
+	}
+	return ""
+}
+
+func (x *WidgetDefinition) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *WidgetDefinition) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *WidgetDefinition) GetProvider() string {
+	if x != nil {
+		return x.Provider
+	}
+	return ""
+}
+
+func (x *WidgetDefinition) GetResource() string {
+	if x != nil {
+		return x.Resource
+	}
+	return ""
+}
+
+func (x *WidgetDefinition) GetBindingField() string {
+	if x != nil {
+		return x.BindingField
+	}
+	return ""
+}
+
+func (x *WidgetDefinition) GetBindingRelation() string {
+	if x != nil {
+		return x.BindingRelation
+	}
+	return ""
+}
+
+func (x *WidgetDefinition) GetCredentialEnv() string {
+	if x != nil {
+		return x.CredentialEnv
+	}
+	return ""
+}
+
+func (x *WidgetDefinition) GetReadOnly() bool {
+	if x != nil {
+		return x.ReadOnly
+	}
+	return false
+}
+
+func (x *WidgetDefinition) GetAccount() string {
+	if x != nil {
+		return x.Account
+	}
+	return ""
+}
+
 var File_aviato_plugin_v1_plugin_proto protoreflect.FileDescriptor
 
 const file_aviato_plugin_v1_plugin_proto_rawDesc = "" +
@@ -4370,7 +4500,7 @@ const file_aviato_plugin_v1_plugin_proto_rawDesc = "" +
 	"\x12GetManifestRequest\x124\n" +
 	"\x16agent_protocol_version\x18\x01 \x01(\rR\x14agentProtocolVersion\"M\n" +
 	"\x13GetManifestResponse\x126\n" +
-	"\bmanifest\x18\x01 \x01(\v2\x1a.aviato.plugin.v1.ManifestR\bmanifest\"\xf5\x05\n" +
+	"\bmanifest\x18\x01 \x01(\v2\x1a.aviato.plugin.v1.ManifestR\bmanifest\"\xb3\x06\n" +
 	"\bManifest\x12)\n" +
 	"\x10protocol_version\x18\x01 \x01(\rR\x0fprotocolVersion\x12\x19\n" +
 	"\bsdk_name\x18\x02 \x01(\tR\asdkName\x12\x1f\n" +
@@ -4388,7 +4518,8 @@ const file_aviato_plugin_v1_plugin_proto_rawDesc = "" +
 	"\n" +
 	"datasource\x18\f \x01(\bR\n" +
 	"datasource\x12A\n" +
-	"\tsummaries\x18\r \x03(\v2#.aviato.plugin.v1.SummaryDefinitionR\tsummaries\"h\n" +
+	"\tsummaries\x18\r \x03(\v2#.aviato.plugin.v1.SummaryDefinitionR\tsummaries\x12<\n" +
+	"\awidgets\x18\x0e \x03(\v2\".aviato.plugin.v1.WidgetDefinitionR\awidgets\"h\n" +
 	"\x11SummaryDefinition\x12\x1e\n" +
 	"\n" +
 	"collection\x18\x01 \x01(\tR\n" +
@@ -4699,7 +4830,21 @@ const file_aviato_plugin_v1_plugin_proto_rawDesc = "" +
 	"deletedIds\x12\x1f\n" +
 	"\vnext_cursor\x18\x03 \x01(\tR\n" +
 	"nextCursor\x12\x19\n" +
-	"\bhas_more\x18\x04 \x01(\bR\ahasMore*t\n" +
+	"\bhas_more\x18\x04 \x01(\bR\ahasMore\"\xc2\x02\n" +
+	"\x10WidgetDefinition\x12\x1e\n" +
+	"\n" +
+	"collection\x18\x01 \x01(\tR\n" +
+	"collection\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
+	"\x05title\x18\x03 \x01(\tR\x05title\x12\x1a\n" +
+	"\bprovider\x18\x04 \x01(\tR\bprovider\x12\x1a\n" +
+	"\bresource\x18\x05 \x01(\tR\bresource\x12#\n" +
+	"\rbinding_field\x18\x06 \x01(\tR\fbindingField\x12)\n" +
+	"\x10binding_relation\x18\a \x01(\tR\x0fbindingRelation\x12%\n" +
+	"\x0ecredential_env\x18\b \x01(\tR\rcredentialEnv\x12\x1b\n" +
+	"\tread_only\x18\t \x01(\bR\breadOnly\x12\x18\n" +
+	"\aaccount\x18\n" +
+	" \x01(\tR\aaccount*t\n" +
 	"\vActionScope\x12\x1c\n" +
 	"\x18ACTION_SCOPE_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13ACTION_SCOPE_SINGLE\x10\x01\x12\x15\n" +
@@ -4761,7 +4906,7 @@ func file_aviato_plugin_v1_plugin_proto_rawDescGZIP() []byte {
 }
 
 var file_aviato_plugin_v1_plugin_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_aviato_plugin_v1_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 66)
+var file_aviato_plugin_v1_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 67)
 var file_aviato_plugin_v1_plugin_proto_goTypes = []any{
 	(ActionScope)(0),                        // 0: aviato.plugin.v1.ActionScope
 	(HookTiming)(0),                         // 1: aviato.plugin.v1.HookTiming
@@ -4832,9 +4977,10 @@ var file_aviato_plugin_v1_plugin_proto_goTypes = []any{
 	(*DatasourceServiceDeleteResponse)(nil), // 66: aviato.plugin.v1.DatasourceServiceDeleteResponse
 	(*ListChangesRequest)(nil),              // 67: aviato.plugin.v1.ListChangesRequest
 	(*ListChangesResponse)(nil),             // 68: aviato.plugin.v1.ListChangesResponse
-	nil,                                     // 69: aviato.plugin.v1.WebhookResult.HeadersEntry
-	(*structpb.Struct)(nil),                 // 70: google.protobuf.Struct
-	(*structpb.Value)(nil),                  // 71: google.protobuf.Value
+	(*WidgetDefinition)(nil),                // 69: aviato.plugin.v1.WidgetDefinition
+	nil,                                     // 70: aviato.plugin.v1.WebhookResult.HeadersEntry
+	(*structpb.Struct)(nil),                 // 71: google.protobuf.Struct
+	(*structpb.Value)(nil),                  // 72: google.protobuf.Value
 }
 var file_aviato_plugin_v1_plugin_proto_depIdxs = []int32{
 	7,   // 0: aviato.plugin.v1.GetManifestResponse.manifest:type_name -> aviato.plugin.v1.Manifest
@@ -4847,122 +4993,123 @@ var file_aviato_plugin_v1_plugin_proto_depIdxs = []int32{
 	15,  // 7: aviato.plugin.v1.Manifest.write_overrides:type_name -> aviato.plugin.v1.WriteOverrideDefinition
 	16,  // 8: aviato.plugin.v1.Manifest.relation_hints:type_name -> aviato.plugin.v1.RelationHint
 	8,   // 9: aviato.plugin.v1.Manifest.summaries:type_name -> aviato.plugin.v1.SummaryDefinition
-	70,  // 10: aviato.plugin.v1.SummaryDefinition.document:type_name -> google.protobuf.Struct
-	0,   // 11: aviato.plugin.v1.ActionDefinition.scope:type_name -> aviato.plugin.v1.ActionScope
-	70,  // 12: aviato.plugin.v1.ActionDefinition.form_schema:type_name -> google.protobuf.Struct
-	70,  // 13: aviato.plugin.v1.ActionDefinition.form_ui_schema:type_name -> google.protobuf.Struct
-	1,   // 14: aviato.plugin.v1.HookDefinition.timing:type_name -> aviato.plugin.v1.HookTiming
-	2,   // 15: aviato.plugin.v1.HookDefinition.operation:type_name -> aviato.plugin.v1.HookOperation
-	70,  // 16: aviato.plugin.v1.ActionTarget.filter:type_name -> google.protobuf.Struct
-	4,   // 17: aviato.plugin.v1.ResolveFormRequest.caller:type_name -> aviato.plugin.v1.Caller
-	17,  // 18: aviato.plugin.v1.ResolveFormRequest.target:type_name -> aviato.plugin.v1.ActionTarget
-	70,  // 19: aviato.plugin.v1.ResolveFormRequest.values:type_name -> google.protobuf.Struct
-	70,  // 20: aviato.plugin.v1.ResolveFormResponse.form_schema:type_name -> google.protobuf.Struct
-	70,  // 21: aviato.plugin.v1.ResolveFormResponse.form_ui_schema:type_name -> google.protobuf.Struct
-	70,  // 22: aviato.plugin.v1.ResolveFormResponse.values:type_name -> google.protobuf.Struct
-	4,   // 23: aviato.plugin.v1.ExecuteActionRequest.caller:type_name -> aviato.plugin.v1.Caller
-	17,  // 24: aviato.plugin.v1.ExecuteActionRequest.target:type_name -> aviato.plugin.v1.ActionTarget
-	70,  // 25: aviato.plugin.v1.ExecuteActionRequest.values:type_name -> google.protobuf.Struct
-	22,  // 26: aviato.plugin.v1.ExecuteActionResponse.result:type_name -> aviato.plugin.v1.ActionResult
-	23,  // 27: aviato.plugin.v1.ActionResult.success:type_name -> aviato.plugin.v1.SuccessResult
-	24,  // 28: aviato.plugin.v1.ActionResult.error:type_name -> aviato.plugin.v1.ErrorResult
-	25,  // 29: aviato.plugin.v1.ActionResult.html:type_name -> aviato.plugin.v1.HtmlResult
-	26,  // 30: aviato.plugin.v1.ActionResult.file:type_name -> aviato.plugin.v1.FileResult
-	27,  // 31: aviato.plugin.v1.ActionResult.redirect:type_name -> aviato.plugin.v1.RedirectResult
-	28,  // 32: aviato.plugin.v1.ActionResult.webhook:type_name -> aviato.plugin.v1.WebhookResult
-	69,  // 33: aviato.plugin.v1.WebhookResult.headers:type_name -> aviato.plugin.v1.WebhookResult.HeadersEntry
-	4,   // 34: aviato.plugin.v1.ComputeFieldsRequest.caller:type_name -> aviato.plugin.v1.Caller
-	70,  // 35: aviato.plugin.v1.ComputeFieldsRequest.records:type_name -> google.protobuf.Struct
-	70,  // 36: aviato.plugin.v1.ComputeFieldsResponse.values:type_name -> google.protobuf.Struct
-	4,   // 37: aviato.plugin.v1.WriteFieldRequest.caller:type_name -> aviato.plugin.v1.Caller
-	71,  // 38: aviato.plugin.v1.WriteFieldRequest.value:type_name -> google.protobuf.Value
-	70,  // 39: aviato.plugin.v1.WriteFieldRequest.record:type_name -> google.protobuf.Struct
-	70,  // 40: aviato.plugin.v1.WriteFieldResponse.patch:type_name -> google.protobuf.Struct
-	4,   // 41: aviato.plugin.v1.ResolveSegmentRequest.caller:type_name -> aviato.plugin.v1.Caller
-	70,  // 42: aviato.plugin.v1.ResolveSegmentResponse.filter:type_name -> google.protobuf.Struct
-	35,  // 43: aviato.plugin.v1.ResolveSegmentResponse.record_ids:type_name -> aviato.plugin.v1.RecordIds
-	4,   // 44: aviato.plugin.v1.SearchRequest.caller:type_name -> aviato.plugin.v1.Caller
-	70,  // 45: aviato.plugin.v1.SearchResponse.filter:type_name -> google.protobuf.Struct
-	4,   // 46: aviato.plugin.v1.ComputeChartRequest.caller:type_name -> aviato.plugin.v1.Caller
-	70,  // 47: aviato.plugin.v1.ComputeChartRequest.filter:type_name -> google.protobuf.Struct
-	70,  // 48: aviato.plugin.v1.ComputeChartResponse.vega_lite:type_name -> google.protobuf.Struct
-	4,   // 49: aviato.plugin.v1.RunHookRequest.caller:type_name -> aviato.plugin.v1.Caller
-	1,   // 50: aviato.plugin.v1.RunHookRequest.timing:type_name -> aviato.plugin.v1.HookTiming
-	2,   // 51: aviato.plugin.v1.RunHookRequest.operation:type_name -> aviato.plugin.v1.HookOperation
-	70,  // 52: aviato.plugin.v1.RunHookRequest.values:type_name -> google.protobuf.Struct
-	70,  // 53: aviato.plugin.v1.RunHookResponse.values:type_name -> google.protobuf.Struct
-	70,  // 54: aviato.plugin.v1.ListRequest.filter:type_name -> google.protobuf.Struct
-	70,  // 55: aviato.plugin.v1.ListResponse.records:type_name -> google.protobuf.Struct
-	70,  // 56: aviato.plugin.v1.GetResponse.record:type_name -> google.protobuf.Struct
-	70,  // 57: aviato.plugin.v1.CreateRequest.values:type_name -> google.protobuf.Struct
-	70,  // 58: aviato.plugin.v1.UpdateRequest.values:type_name -> google.protobuf.Struct
-	70,  // 59: aviato.plugin.v1.CreateResponse.record:type_name -> google.protobuf.Struct
-	70,  // 60: aviato.plugin.v1.UpdateResponse.record:type_name -> google.protobuf.Struct
-	54,  // 61: aviato.plugin.v1.DescribeCollectionsResponse.collections:type_name -> aviato.plugin.v1.CustomCollection
-	55,  // 62: aviato.plugin.v1.CustomCollection.fields:type_name -> aviato.plugin.v1.CustomField
-	16,  // 63: aviato.plugin.v1.CustomCollection.relations:type_name -> aviato.plugin.v1.RelationHint
-	56,  // 64: aviato.plugin.v1.CustomCollection.capabilities:type_name -> aviato.plugin.v1.CollectionCapabilities
-	3,   // 65: aviato.plugin.v1.CustomCollection.strategy:type_name -> aviato.plugin.v1.DatasourceStrategy
-	4,   // 66: aviato.plugin.v1.DatasourceServiceListRequest.caller:type_name -> aviato.plugin.v1.Caller
-	70,  // 67: aviato.plugin.v1.DatasourceServiceListRequest.filter:type_name -> google.protobuf.Struct
-	70,  // 68: aviato.plugin.v1.DatasourceServiceListResponse.records:type_name -> google.protobuf.Struct
-	4,   // 69: aviato.plugin.v1.DatasourceServiceGetRequest.caller:type_name -> aviato.plugin.v1.Caller
-	70,  // 70: aviato.plugin.v1.DatasourceServiceGetResponse.record:type_name -> google.protobuf.Struct
-	4,   // 71: aviato.plugin.v1.DatasourceServiceCreateRequest.caller:type_name -> aviato.plugin.v1.Caller
-	70,  // 72: aviato.plugin.v1.DatasourceServiceCreateRequest.values:type_name -> google.protobuf.Struct
-	70,  // 73: aviato.plugin.v1.DatasourceServiceCreateResponse.record:type_name -> google.protobuf.Struct
-	4,   // 74: aviato.plugin.v1.DatasourceServiceUpdateRequest.caller:type_name -> aviato.plugin.v1.Caller
-	70,  // 75: aviato.plugin.v1.DatasourceServiceUpdateRequest.values:type_name -> google.protobuf.Struct
-	70,  // 76: aviato.plugin.v1.DatasourceServiceUpdateResponse.record:type_name -> google.protobuf.Struct
-	4,   // 77: aviato.plugin.v1.DatasourceServiceDeleteRequest.caller:type_name -> aviato.plugin.v1.Caller
-	70,  // 78: aviato.plugin.v1.ListChangesResponse.records:type_name -> google.protobuf.Struct
-	5,   // 79: aviato.plugin.v1.PluginService.GetManifest:input_type -> aviato.plugin.v1.GetManifestRequest
-	18,  // 80: aviato.plugin.v1.PluginService.ResolveForm:input_type -> aviato.plugin.v1.ResolveFormRequest
-	20,  // 81: aviato.plugin.v1.PluginService.ExecuteAction:input_type -> aviato.plugin.v1.ExecuteActionRequest
-	29,  // 82: aviato.plugin.v1.PluginService.ComputeFields:input_type -> aviato.plugin.v1.ComputeFieldsRequest
-	31,  // 83: aviato.plugin.v1.PluginService.WriteField:input_type -> aviato.plugin.v1.WriteFieldRequest
-	33,  // 84: aviato.plugin.v1.PluginService.ResolveSegment:input_type -> aviato.plugin.v1.ResolveSegmentRequest
-	40,  // 85: aviato.plugin.v1.PluginService.RunHook:input_type -> aviato.plugin.v1.RunHookRequest
-	36,  // 86: aviato.plugin.v1.PluginService.Search:input_type -> aviato.plugin.v1.SearchRequest
-	38,  // 87: aviato.plugin.v1.PluginService.ComputeChart:input_type -> aviato.plugin.v1.ComputeChartRequest
-	42,  // 88: aviato.plugin.v1.DataService.List:input_type -> aviato.plugin.v1.ListRequest
-	44,  // 89: aviato.plugin.v1.DataService.Get:input_type -> aviato.plugin.v1.GetRequest
-	46,  // 90: aviato.plugin.v1.DataService.Create:input_type -> aviato.plugin.v1.CreateRequest
-	47,  // 91: aviato.plugin.v1.DataService.Update:input_type -> aviato.plugin.v1.UpdateRequest
-	48,  // 92: aviato.plugin.v1.DataService.Delete:input_type -> aviato.plugin.v1.DeleteRequest
-	52,  // 93: aviato.plugin.v1.DatasourceService.DescribeCollections:input_type -> aviato.plugin.v1.DescribeCollectionsRequest
-	57,  // 94: aviato.plugin.v1.DatasourceService.List:input_type -> aviato.plugin.v1.DatasourceServiceListRequest
-	59,  // 95: aviato.plugin.v1.DatasourceService.Get:input_type -> aviato.plugin.v1.DatasourceServiceGetRequest
-	61,  // 96: aviato.plugin.v1.DatasourceService.Create:input_type -> aviato.plugin.v1.DatasourceServiceCreateRequest
-	63,  // 97: aviato.plugin.v1.DatasourceService.Update:input_type -> aviato.plugin.v1.DatasourceServiceUpdateRequest
-	65,  // 98: aviato.plugin.v1.DatasourceService.Delete:input_type -> aviato.plugin.v1.DatasourceServiceDeleteRequest
-	67,  // 99: aviato.plugin.v1.DatasourceService.ListChanges:input_type -> aviato.plugin.v1.ListChangesRequest
-	6,   // 100: aviato.plugin.v1.PluginService.GetManifest:output_type -> aviato.plugin.v1.GetManifestResponse
-	19,  // 101: aviato.plugin.v1.PluginService.ResolveForm:output_type -> aviato.plugin.v1.ResolveFormResponse
-	21,  // 102: aviato.plugin.v1.PluginService.ExecuteAction:output_type -> aviato.plugin.v1.ExecuteActionResponse
-	30,  // 103: aviato.plugin.v1.PluginService.ComputeFields:output_type -> aviato.plugin.v1.ComputeFieldsResponse
-	32,  // 104: aviato.plugin.v1.PluginService.WriteField:output_type -> aviato.plugin.v1.WriteFieldResponse
-	34,  // 105: aviato.plugin.v1.PluginService.ResolveSegment:output_type -> aviato.plugin.v1.ResolveSegmentResponse
-	41,  // 106: aviato.plugin.v1.PluginService.RunHook:output_type -> aviato.plugin.v1.RunHookResponse
-	37,  // 107: aviato.plugin.v1.PluginService.Search:output_type -> aviato.plugin.v1.SearchResponse
-	39,  // 108: aviato.plugin.v1.PluginService.ComputeChart:output_type -> aviato.plugin.v1.ComputeChartResponse
-	43,  // 109: aviato.plugin.v1.DataService.List:output_type -> aviato.plugin.v1.ListResponse
-	45,  // 110: aviato.plugin.v1.DataService.Get:output_type -> aviato.plugin.v1.GetResponse
-	49,  // 111: aviato.plugin.v1.DataService.Create:output_type -> aviato.plugin.v1.CreateResponse
-	50,  // 112: aviato.plugin.v1.DataService.Update:output_type -> aviato.plugin.v1.UpdateResponse
-	51,  // 113: aviato.plugin.v1.DataService.Delete:output_type -> aviato.plugin.v1.DeleteResponse
-	53,  // 114: aviato.plugin.v1.DatasourceService.DescribeCollections:output_type -> aviato.plugin.v1.DescribeCollectionsResponse
-	58,  // 115: aviato.plugin.v1.DatasourceService.List:output_type -> aviato.plugin.v1.DatasourceServiceListResponse
-	60,  // 116: aviato.plugin.v1.DatasourceService.Get:output_type -> aviato.plugin.v1.DatasourceServiceGetResponse
-	62,  // 117: aviato.plugin.v1.DatasourceService.Create:output_type -> aviato.plugin.v1.DatasourceServiceCreateResponse
-	64,  // 118: aviato.plugin.v1.DatasourceService.Update:output_type -> aviato.plugin.v1.DatasourceServiceUpdateResponse
-	66,  // 119: aviato.plugin.v1.DatasourceService.Delete:output_type -> aviato.plugin.v1.DatasourceServiceDeleteResponse
-	68,  // 120: aviato.plugin.v1.DatasourceService.ListChanges:output_type -> aviato.plugin.v1.ListChangesResponse
-	100, // [100:121] is the sub-list for method output_type
-	79,  // [79:100] is the sub-list for method input_type
-	79,  // [79:79] is the sub-list for extension type_name
-	79,  // [79:79] is the sub-list for extension extendee
-	0,   // [0:79] is the sub-list for field type_name
+	69,  // 10: aviato.plugin.v1.Manifest.widgets:type_name -> aviato.plugin.v1.WidgetDefinition
+	71,  // 11: aviato.plugin.v1.SummaryDefinition.document:type_name -> google.protobuf.Struct
+	0,   // 12: aviato.plugin.v1.ActionDefinition.scope:type_name -> aviato.plugin.v1.ActionScope
+	71,  // 13: aviato.plugin.v1.ActionDefinition.form_schema:type_name -> google.protobuf.Struct
+	71,  // 14: aviato.plugin.v1.ActionDefinition.form_ui_schema:type_name -> google.protobuf.Struct
+	1,   // 15: aviato.plugin.v1.HookDefinition.timing:type_name -> aviato.plugin.v1.HookTiming
+	2,   // 16: aviato.plugin.v1.HookDefinition.operation:type_name -> aviato.plugin.v1.HookOperation
+	71,  // 17: aviato.plugin.v1.ActionTarget.filter:type_name -> google.protobuf.Struct
+	4,   // 18: aviato.plugin.v1.ResolveFormRequest.caller:type_name -> aviato.plugin.v1.Caller
+	17,  // 19: aviato.plugin.v1.ResolveFormRequest.target:type_name -> aviato.plugin.v1.ActionTarget
+	71,  // 20: aviato.plugin.v1.ResolveFormRequest.values:type_name -> google.protobuf.Struct
+	71,  // 21: aviato.plugin.v1.ResolveFormResponse.form_schema:type_name -> google.protobuf.Struct
+	71,  // 22: aviato.plugin.v1.ResolveFormResponse.form_ui_schema:type_name -> google.protobuf.Struct
+	71,  // 23: aviato.plugin.v1.ResolveFormResponse.values:type_name -> google.protobuf.Struct
+	4,   // 24: aviato.plugin.v1.ExecuteActionRequest.caller:type_name -> aviato.plugin.v1.Caller
+	17,  // 25: aviato.plugin.v1.ExecuteActionRequest.target:type_name -> aviato.plugin.v1.ActionTarget
+	71,  // 26: aviato.plugin.v1.ExecuteActionRequest.values:type_name -> google.protobuf.Struct
+	22,  // 27: aviato.plugin.v1.ExecuteActionResponse.result:type_name -> aviato.plugin.v1.ActionResult
+	23,  // 28: aviato.plugin.v1.ActionResult.success:type_name -> aviato.plugin.v1.SuccessResult
+	24,  // 29: aviato.plugin.v1.ActionResult.error:type_name -> aviato.plugin.v1.ErrorResult
+	25,  // 30: aviato.plugin.v1.ActionResult.html:type_name -> aviato.plugin.v1.HtmlResult
+	26,  // 31: aviato.plugin.v1.ActionResult.file:type_name -> aviato.plugin.v1.FileResult
+	27,  // 32: aviato.plugin.v1.ActionResult.redirect:type_name -> aviato.plugin.v1.RedirectResult
+	28,  // 33: aviato.plugin.v1.ActionResult.webhook:type_name -> aviato.plugin.v1.WebhookResult
+	70,  // 34: aviato.plugin.v1.WebhookResult.headers:type_name -> aviato.plugin.v1.WebhookResult.HeadersEntry
+	4,   // 35: aviato.plugin.v1.ComputeFieldsRequest.caller:type_name -> aviato.plugin.v1.Caller
+	71,  // 36: aviato.plugin.v1.ComputeFieldsRequest.records:type_name -> google.protobuf.Struct
+	71,  // 37: aviato.plugin.v1.ComputeFieldsResponse.values:type_name -> google.protobuf.Struct
+	4,   // 38: aviato.plugin.v1.WriteFieldRequest.caller:type_name -> aviato.plugin.v1.Caller
+	72,  // 39: aviato.plugin.v1.WriteFieldRequest.value:type_name -> google.protobuf.Value
+	71,  // 40: aviato.plugin.v1.WriteFieldRequest.record:type_name -> google.protobuf.Struct
+	71,  // 41: aviato.plugin.v1.WriteFieldResponse.patch:type_name -> google.protobuf.Struct
+	4,   // 42: aviato.plugin.v1.ResolveSegmentRequest.caller:type_name -> aviato.plugin.v1.Caller
+	71,  // 43: aviato.plugin.v1.ResolveSegmentResponse.filter:type_name -> google.protobuf.Struct
+	35,  // 44: aviato.plugin.v1.ResolveSegmentResponse.record_ids:type_name -> aviato.plugin.v1.RecordIds
+	4,   // 45: aviato.plugin.v1.SearchRequest.caller:type_name -> aviato.plugin.v1.Caller
+	71,  // 46: aviato.plugin.v1.SearchResponse.filter:type_name -> google.protobuf.Struct
+	4,   // 47: aviato.plugin.v1.ComputeChartRequest.caller:type_name -> aviato.plugin.v1.Caller
+	71,  // 48: aviato.plugin.v1.ComputeChartRequest.filter:type_name -> google.protobuf.Struct
+	71,  // 49: aviato.plugin.v1.ComputeChartResponse.vega_lite:type_name -> google.protobuf.Struct
+	4,   // 50: aviato.plugin.v1.RunHookRequest.caller:type_name -> aviato.plugin.v1.Caller
+	1,   // 51: aviato.plugin.v1.RunHookRequest.timing:type_name -> aviato.plugin.v1.HookTiming
+	2,   // 52: aviato.plugin.v1.RunHookRequest.operation:type_name -> aviato.plugin.v1.HookOperation
+	71,  // 53: aviato.plugin.v1.RunHookRequest.values:type_name -> google.protobuf.Struct
+	71,  // 54: aviato.plugin.v1.RunHookResponse.values:type_name -> google.protobuf.Struct
+	71,  // 55: aviato.plugin.v1.ListRequest.filter:type_name -> google.protobuf.Struct
+	71,  // 56: aviato.plugin.v1.ListResponse.records:type_name -> google.protobuf.Struct
+	71,  // 57: aviato.plugin.v1.GetResponse.record:type_name -> google.protobuf.Struct
+	71,  // 58: aviato.plugin.v1.CreateRequest.values:type_name -> google.protobuf.Struct
+	71,  // 59: aviato.plugin.v1.UpdateRequest.values:type_name -> google.protobuf.Struct
+	71,  // 60: aviato.plugin.v1.CreateResponse.record:type_name -> google.protobuf.Struct
+	71,  // 61: aviato.plugin.v1.UpdateResponse.record:type_name -> google.protobuf.Struct
+	54,  // 62: aviato.plugin.v1.DescribeCollectionsResponse.collections:type_name -> aviato.plugin.v1.CustomCollection
+	55,  // 63: aviato.plugin.v1.CustomCollection.fields:type_name -> aviato.plugin.v1.CustomField
+	16,  // 64: aviato.plugin.v1.CustomCollection.relations:type_name -> aviato.plugin.v1.RelationHint
+	56,  // 65: aviato.plugin.v1.CustomCollection.capabilities:type_name -> aviato.plugin.v1.CollectionCapabilities
+	3,   // 66: aviato.plugin.v1.CustomCollection.strategy:type_name -> aviato.plugin.v1.DatasourceStrategy
+	4,   // 67: aviato.plugin.v1.DatasourceServiceListRequest.caller:type_name -> aviato.plugin.v1.Caller
+	71,  // 68: aviato.plugin.v1.DatasourceServiceListRequest.filter:type_name -> google.protobuf.Struct
+	71,  // 69: aviato.plugin.v1.DatasourceServiceListResponse.records:type_name -> google.protobuf.Struct
+	4,   // 70: aviato.plugin.v1.DatasourceServiceGetRequest.caller:type_name -> aviato.plugin.v1.Caller
+	71,  // 71: aviato.plugin.v1.DatasourceServiceGetResponse.record:type_name -> google.protobuf.Struct
+	4,   // 72: aviato.plugin.v1.DatasourceServiceCreateRequest.caller:type_name -> aviato.plugin.v1.Caller
+	71,  // 73: aviato.plugin.v1.DatasourceServiceCreateRequest.values:type_name -> google.protobuf.Struct
+	71,  // 74: aviato.plugin.v1.DatasourceServiceCreateResponse.record:type_name -> google.protobuf.Struct
+	4,   // 75: aviato.plugin.v1.DatasourceServiceUpdateRequest.caller:type_name -> aviato.plugin.v1.Caller
+	71,  // 76: aviato.plugin.v1.DatasourceServiceUpdateRequest.values:type_name -> google.protobuf.Struct
+	71,  // 77: aviato.plugin.v1.DatasourceServiceUpdateResponse.record:type_name -> google.protobuf.Struct
+	4,   // 78: aviato.plugin.v1.DatasourceServiceDeleteRequest.caller:type_name -> aviato.plugin.v1.Caller
+	71,  // 79: aviato.plugin.v1.ListChangesResponse.records:type_name -> google.protobuf.Struct
+	5,   // 80: aviato.plugin.v1.PluginService.GetManifest:input_type -> aviato.plugin.v1.GetManifestRequest
+	18,  // 81: aviato.plugin.v1.PluginService.ResolveForm:input_type -> aviato.plugin.v1.ResolveFormRequest
+	20,  // 82: aviato.plugin.v1.PluginService.ExecuteAction:input_type -> aviato.plugin.v1.ExecuteActionRequest
+	29,  // 83: aviato.plugin.v1.PluginService.ComputeFields:input_type -> aviato.plugin.v1.ComputeFieldsRequest
+	31,  // 84: aviato.plugin.v1.PluginService.WriteField:input_type -> aviato.plugin.v1.WriteFieldRequest
+	33,  // 85: aviato.plugin.v1.PluginService.ResolveSegment:input_type -> aviato.plugin.v1.ResolveSegmentRequest
+	40,  // 86: aviato.plugin.v1.PluginService.RunHook:input_type -> aviato.plugin.v1.RunHookRequest
+	36,  // 87: aviato.plugin.v1.PluginService.Search:input_type -> aviato.plugin.v1.SearchRequest
+	38,  // 88: aviato.plugin.v1.PluginService.ComputeChart:input_type -> aviato.plugin.v1.ComputeChartRequest
+	42,  // 89: aviato.plugin.v1.DataService.List:input_type -> aviato.plugin.v1.ListRequest
+	44,  // 90: aviato.plugin.v1.DataService.Get:input_type -> aviato.plugin.v1.GetRequest
+	46,  // 91: aviato.plugin.v1.DataService.Create:input_type -> aviato.plugin.v1.CreateRequest
+	47,  // 92: aviato.plugin.v1.DataService.Update:input_type -> aviato.plugin.v1.UpdateRequest
+	48,  // 93: aviato.plugin.v1.DataService.Delete:input_type -> aviato.plugin.v1.DeleteRequest
+	52,  // 94: aviato.plugin.v1.DatasourceService.DescribeCollections:input_type -> aviato.plugin.v1.DescribeCollectionsRequest
+	57,  // 95: aviato.plugin.v1.DatasourceService.List:input_type -> aviato.plugin.v1.DatasourceServiceListRequest
+	59,  // 96: aviato.plugin.v1.DatasourceService.Get:input_type -> aviato.plugin.v1.DatasourceServiceGetRequest
+	61,  // 97: aviato.plugin.v1.DatasourceService.Create:input_type -> aviato.plugin.v1.DatasourceServiceCreateRequest
+	63,  // 98: aviato.plugin.v1.DatasourceService.Update:input_type -> aviato.plugin.v1.DatasourceServiceUpdateRequest
+	65,  // 99: aviato.plugin.v1.DatasourceService.Delete:input_type -> aviato.plugin.v1.DatasourceServiceDeleteRequest
+	67,  // 100: aviato.plugin.v1.DatasourceService.ListChanges:input_type -> aviato.plugin.v1.ListChangesRequest
+	6,   // 101: aviato.plugin.v1.PluginService.GetManifest:output_type -> aviato.plugin.v1.GetManifestResponse
+	19,  // 102: aviato.plugin.v1.PluginService.ResolveForm:output_type -> aviato.plugin.v1.ResolveFormResponse
+	21,  // 103: aviato.plugin.v1.PluginService.ExecuteAction:output_type -> aviato.plugin.v1.ExecuteActionResponse
+	30,  // 104: aviato.plugin.v1.PluginService.ComputeFields:output_type -> aviato.plugin.v1.ComputeFieldsResponse
+	32,  // 105: aviato.plugin.v1.PluginService.WriteField:output_type -> aviato.plugin.v1.WriteFieldResponse
+	34,  // 106: aviato.plugin.v1.PluginService.ResolveSegment:output_type -> aviato.plugin.v1.ResolveSegmentResponse
+	41,  // 107: aviato.plugin.v1.PluginService.RunHook:output_type -> aviato.plugin.v1.RunHookResponse
+	37,  // 108: aviato.plugin.v1.PluginService.Search:output_type -> aviato.plugin.v1.SearchResponse
+	39,  // 109: aviato.plugin.v1.PluginService.ComputeChart:output_type -> aviato.plugin.v1.ComputeChartResponse
+	43,  // 110: aviato.plugin.v1.DataService.List:output_type -> aviato.plugin.v1.ListResponse
+	45,  // 111: aviato.plugin.v1.DataService.Get:output_type -> aviato.plugin.v1.GetResponse
+	49,  // 112: aviato.plugin.v1.DataService.Create:output_type -> aviato.plugin.v1.CreateResponse
+	50,  // 113: aviato.plugin.v1.DataService.Update:output_type -> aviato.plugin.v1.UpdateResponse
+	51,  // 114: aviato.plugin.v1.DataService.Delete:output_type -> aviato.plugin.v1.DeleteResponse
+	53,  // 115: aviato.plugin.v1.DatasourceService.DescribeCollections:output_type -> aviato.plugin.v1.DescribeCollectionsResponse
+	58,  // 116: aviato.plugin.v1.DatasourceService.List:output_type -> aviato.plugin.v1.DatasourceServiceListResponse
+	60,  // 117: aviato.plugin.v1.DatasourceService.Get:output_type -> aviato.plugin.v1.DatasourceServiceGetResponse
+	62,  // 118: aviato.plugin.v1.DatasourceService.Create:output_type -> aviato.plugin.v1.DatasourceServiceCreateResponse
+	64,  // 119: aviato.plugin.v1.DatasourceService.Update:output_type -> aviato.plugin.v1.DatasourceServiceUpdateResponse
+	66,  // 120: aviato.plugin.v1.DatasourceService.Delete:output_type -> aviato.plugin.v1.DatasourceServiceDeleteResponse
+	68,  // 121: aviato.plugin.v1.DatasourceService.ListChanges:output_type -> aviato.plugin.v1.ListChangesResponse
+	101, // [101:122] is the sub-list for method output_type
+	80,  // [80:101] is the sub-list for method input_type
+	80,  // [80:80] is the sub-list for extension type_name
+	80,  // [80:80] is the sub-list for extension extendee
+	0,   // [0:80] is the sub-list for field type_name
 }
 
 func init() { file_aviato_plugin_v1_plugin_proto_init() }
@@ -4988,7 +5135,7 @@ func file_aviato_plugin_v1_plugin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_aviato_plugin_v1_plugin_proto_rawDesc), len(file_aviato_plugin_v1_plugin_proto_rawDesc)),
 			NumEnums:      4,
-			NumMessages:   66,
+			NumMessages:   67,
 			NumExtensions: 0,
 			NumServices:   3,
 		},

@@ -27,7 +27,7 @@ const (
 	// SDKName is reported to the agent in the manifest.
 	SDKName = "github.com/getaviato/aviato-go"
 	// SDKVersion is reported to the agent in the manifest.
-	SDKVersion = "0.1.0"
+	SDKVersion = "0.3.0"
 )
 
 // Options configure a [Plugin].
@@ -225,6 +225,7 @@ type Plugin struct {
 	writes    registry[writeDef]
 	charts    registry[chartDef]
 	summaries registry[summaryDef]
+	widgets   registry[WidgetDefinition]
 	relations []RelationHint
 	// collections are the custom collections of the registered datasources, by name.
 	collections registry[customCollectionDef]
@@ -415,6 +416,14 @@ func (p *Plugin) Manifest() (*pluginv1.Manifest, error) {
 	}
 	for _, search := range p.searches.items {
 		manifest.Searches = append(manifest.Searches, &pluginv1.SearchDefinition{Collection: search.collection, Replace: search.replace})
+	}
+	for _, widget := range p.widgets.items {
+		manifest.Widgets = append(manifest.Widgets, &pluginv1.WidgetDefinition{
+			Collection: widget.Collection, Name: widget.Name, Title: widget.Title,
+			Provider: widget.Provider, Resource: widget.Resource,
+			BindingField: widget.BindingField, BindingRelation: widget.BindingRelation,
+			CredentialEnv: widget.CredentialEnv, ReadOnly: widget.ReadOnly, Account: widget.Account,
+		})
 	}
 	for _, summary := range p.summaries.items {
 		document, err := toStruct(summary.document)
