@@ -1,0 +1,18 @@
+{
+    "version": 1,
+    "state": { "expanded": false },
+    "components": {
+        "CustomerName": {
+            "props": { "value": "string" },
+            "root": { "type": "Text", "props": { "value": { "$bind": "/props/value" }, "variant": "heading" } }
+        }
+    },
+    "root": {
+        "type": "Stack",
+        "children": [
+            { "type": "Component", "props": { "name": "CustomerName", "value": { "$bind": "/record/name" } } },
+            { "type": "Button", "props": { "label": "Show details" }, "onPress": { "type": "setState", "key": "expanded", "value": true } },
+            { "type": "Badge", "props": { "value": { "$bind": "/record/plan" } }, "visible": { "op": "eq", "left": { "$bind": "/state/expanded" }, "right": true } }
+        ]
+    }
+}

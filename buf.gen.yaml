@@ -1,0 +1,24 @@
+# Generates the Go protocol bindings from the shared protocol definitions.
+# Run `buf generate` from this directory (needs protoc-gen-go and protoc-gen-connect-go on PATH:
+#   go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+#   go install connectrpc.com/connect/cmd/protoc-gen-connect-go@latest).
+version: v2
+inputs:
+  - directory: ../protocol/proto
+    paths:
+      - ../protocol/proto/aviato/plugin/v1
+managed:
+  enabled: true
+  override:
+    - file_option: go_package
+      path: aviato/plugin/v1
+      value: github.com/getaviato/aviato-go/pluginv1
+plugins:
+  - local: protoc-gen-go
+    out: .
+    opt:
+      - module=github.com/getaviato/aviato-go
+  - local: protoc-gen-connect-go
+    out: .
+    opt:
+      - module=github.com/getaviato/aviato-go

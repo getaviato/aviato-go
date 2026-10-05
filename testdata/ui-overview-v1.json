@@ -1,0 +1,43 @@
+{
+    "version": 1,
+    "root": {
+        "type": "Stack",
+        "children": [
+            {
+                "type": "Grid",
+                "props": { "columns": 3, "variant": "metrics" },
+                "children": [
+                    { "type": "Metric", "props": { "label": "Monthly revenue", "value": { "$bind": "/record/revenue" }, "hint": "Recurring subscription" } },
+                    { "type": "Metric", "props": { "label": "Active seats", "value": { "$bind": "/record/seats" } } },
+                    { "type": "Metric", "props": { "label": "Open tickets", "value": { "$bind": "/record/tickets" }, "hint": { "$bind": "/record/support_hint" } } }
+                ]
+            },
+            {
+                "type": "Grid",
+                "props": { "columns": 2, "ratio": "wide-left", "gap": "medium" },
+                "children": [
+                    {
+                        "type": "Section",
+                        "props": { "title": "Account details" },
+                        "children": [
+                            { "type": "Property", "props": { "label": "Plan", "value": { "$bind": "/record/plan" }, "variant": "badge" } },
+                            { "type": "Property", "props": { "label": "Email", "value": { "$bind": "/record/email" }, "variant": "text" } },
+                            { "type": "Property", "props": { "label": "Customer ID", "value": { "$bind": "/record/id" }, "variant": "code" } }
+                        ]
+                    },
+                    {
+                        "type": "Section",
+                        "props": { "title": "Customer review" },
+                        "children": [
+                            { "type": "Button", "props": { "label": "Review customer", "variant": "primary" }, "onPress": { "type": "action", "name": "Review customer" } },
+                            { "type": "Button", "props": { "label": "Show details", "variant": "secondary" }, "onPress": { "type": "setState", "key": "expanded", "value": true } },
+                            { "type": "Text", "props": { "value": "Confirm account details before renewal.", "variant": "muted" }, "visible": { "op": "eq", "left": { "$bind": "/state/expanded" }, "right": true } },
+                            { "type": "Button", "props": { "label": "Hide details", "variant": "ghost" }, "onPress": { "type": "setState", "key": "expanded", "value": false }, "visible": { "op": "eq", "left": { "$bind": "/state/expanded" }, "right": true } }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "state": { "expanded": false }
+}
