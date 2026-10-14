@@ -155,6 +155,11 @@ func TestNewRejectsInvalidSecrets(t *testing.T) {
 	require.Error(t, err)
 	_, err = aviato.New(aviato.Options{Secret: "whsec_not base64!"})
 	require.Error(t, err)
+	// Decodes to an empty or short key anyone could sign with.
+	_, err = aviato.New(aviato.Options{Secret: "whsec_"})
+	require.Error(t, err)
+	_, err = aviato.New(aviato.Options{Secret: "whsec_" + base64.StdEncoding.EncodeToString([]byte("short"))})
+	require.Error(t, err)
 	assert.Panics(t, func() { aviato.MustNew(aviato.Options{}) })
 }
 
@@ -275,6 +280,38 @@ func TestSignatureVerification(t *testing.T) {
 		})
 		status, _ := post(t, &http.Client{Transport: transport}, nil, body)
 		assert.Equal(t, http.StatusUnauthorized, status)
+	})
+	t.Run("bound to another endpoint, then replayed", func(t *testing.T) {
+		// Sign a request without delivering it, as someone watching the traffic would capture it.
+		transport, err := aviato.NewSigningTransport(secret)
+		require.NoError(t, err)
+		transport.BaseURL = f.baseURL
+		var captured *http.Request
+		transport.Base = roundTripFunc(func(request *http.Request) (*http.Response, error) {
+			captured = request
+			return &http.Response{StatusCode: http.StatusOK, Body: http.NoBody, Request: request}, nil
+		})
+		_, _ = post(t, &http.Client{Transport: transport}, nil, body)
+		require.NotNil(t, captured)
+		headers := map[string]string{}
+		for _, name := range []string{"webhook-id", "webhook-timestamp", "webhook-signature"} {
+			headers[name] = captured.Header.Get(name)
+		}
+		resend := func(path string) int {
+			request, err := http.NewRequestWithContext(context.Background(), http.MethodPost, f.baseURL+"/aviato.plugin.v1.PluginService/"+path, bytes.NewReader(body))
+			require.NoError(t, err)
+			request.Header.Set("Content-Type", "application/json")
+			for name, value := range headers {
+				request.Header.Set(name, value)
+			}
+			response, err := http.DefaultClient.Do(request)
+			require.NoError(t, err)
+			response.Body.Close()
+			return response.StatusCode
+		}
+		assert.Equal(t, http.StatusUnauthorized, resend("ComputeFields"))
+		assert.Equal(t, http.StatusOK, resend("GetManifest"))
+		assert.Equal(t, http.StatusUnauthorized, resend("GetManifest"))
 	})
 	t.Run("unknown path is not found", func(t *testing.T) {
 		request, err := http.NewRequestWithContext(context.Background(), http.MethodPost, f.baseURL+"/nope", nil)
@@ -527,16 +564,16 @@ func TestActionRecordsGoThroughTheDataAPI(t *testing.T) {
 		mu           sync.Mutex
 		contentTypes []string
 	)
-	agent := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	connector := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		contentTypes = append(contentTypes, r.Header.Get("Content-Type"))
 		mu.Unlock()
 		http.StripPrefix("/data", mux).ServeHTTP(w, r)
 	}))
-	t.Cleanup(agent.Close)
+	t.Cleanup(connector.Close)
 
 	f := newFixture(t, testPlugin(t))
-	f.caller.DataUrl = agent.URL + "/data"
+	f.caller.DataUrl = connector.URL + "/data"
 	result, err := f.execute(t, "Count", &pluginv1.ActionTarget{Collection: "customers", RecordIds: []string{"1", "2", "3"}}, nil)
 	require.NoError(t, err)
 	assert.Equal(t, "Acme,Globex", result.GetSuccess().GetMessage(), "missing records are skipped")

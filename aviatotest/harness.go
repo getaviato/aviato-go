@@ -1,11 +1,12 @@
 // Package aviatotest calls a plugin's registered actions, computed fields, hooks, segments,
 // searches, write overrides, charts and custom datasources in unit tests, with a fake caller and
-// without an agent.
+// without a connector.
 //
 //	h := aviatotest.New(t, plugin, aviatotest.WithRecords("customers", aviato.Record{"id": "42", "name": "Acme"}))
-//	result, err := h.Execute(ctx, "customers", "Refund last invoice", aviatotest.Target{RecordIDs: []string{"42"}})
+//	result, err := h.ExecuteAction(ctx, "customers", "Refund last invoice", aviatotest.Target{RecordIDs: []string{"42"}})
 //	require.NoError(t, err)
 //	assert.Equal(t, aviato.Success("Refunded 42", "invoices"), result)
+//	h.Data().AssertUpdated(t, "customers", "42", aviato.Record{"refunded": true})
 //
 // Handlers are called directly: signatures and protocol encoding are skipped, but values go
 // through a JSON round trip like on the wire (numbers arrive as float64). Handlers reading or
@@ -40,7 +41,7 @@ type dispatcher interface {
 	ListChanges(ctx context.Context, collection, cursor string) (aviato.DatasourceChanges, error)
 }
 
-// Harness calls a plugin's handlers as the agent would.
+// Harness calls a plugin's handlers as the connector would.
 type Harness struct {
 	dispatcher dispatcher
 	caller     aviato.Caller
@@ -92,6 +93,16 @@ func New(tb testing.TB, plugin *aviato.Plugin, options ...Option) *Harness {
 	return h
 }
 
+// ActingAs returns a harness calling the handlers as caller, sharing this harness's fake Data API.
+// Its DataURL and InvocationToken are overridden to point at the fake Data API.
+func (h *Harness) ActingAs(caller aviato.Caller) *Harness {
+	copied := *h
+	copied.caller = caller
+	copied.caller.DataURL = h.data.URL()
+	copied.caller.InvocationToken = h.data.token
+	return &copied
+}
+
 // Caller is the caller handlers receive.
 func (h *Harness) Caller() aviato.Caller { return h.caller }
 
@@ -129,8 +140,8 @@ func (h *Harness) actionContext(collection string, target Target) (*aviato.Actio
 	}, nil
 }
 
-// Execute runs an action and returns its result (file results carry their content).
-func (h *Harness) Execute(ctx context.Context, collection, action string, target Target) (aviato.Result, error) {
+// ExecuteAction runs an action and returns its result (file results carry their content).
+func (h *Harness) ExecuteAction(ctx context.Context, collection, action string, target Target) (aviato.Result, error) {
 	a, err := h.actionContext(collection, target)
 	if err != nil {
 		return nil, err
@@ -147,8 +158,8 @@ func (h *Harness) ResolveForm(ctx context.Context, collection, action string, ta
 	return h.dispatcher.ResolveForm(ctx, action, &aviato.FormContext{ActionContext: *a, ChangedField: changedField})
 }
 
-// Compute computes one field for records, returning one value per record.
-func (h *Harness) Compute(ctx context.Context, collection, field string, records ...aviato.Record) ([]any, error) {
+// ComputeField computes one field for records, returning one value per record.
+func (h *Harness) ComputeField(ctx context.Context, collection, field string, records ...aviato.Record) ([]any, error) {
 	normalized := make([]aviato.Record, 0, len(records))
 	for _, record := range records {
 		value, err := normalize(record)
@@ -180,8 +191,8 @@ type Hook struct {
 	Action    string
 }
 
-// RunHook runs the hooks registered for an operation, as the agent does.
-func (h *Harness) RunHook(ctx context.Context, collection string, timing aviato.HookTiming, operation aviato.HookOperation, hook Hook) (aviato.HookResult, error) {
+// RunHooks runs the hooks registered for an operation, in order, as the connector does.
+func (h *Harness) RunHooks(ctx context.Context, collection string, timing aviato.HookTiming, operation aviato.HookOperation, hook Hook) (aviato.HookResult, error) {
 	values, err := normalize(hook.Values)
 	if err != nil {
 		return aviato.HookResult{}, err
@@ -210,8 +221,8 @@ func (h *Harness) WriteField(ctx context.Context, collection, field string, valu
 	return h.dispatcher.Write(ctx, &inv, field, normalizedValue, normalizedRecord)
 }
 
-// Segment resolves a code segment.
-func (h *Harness) Segment(ctx context.Context, collection, name string) (aviato.SegmentResult, error) {
+// ResolveSegment resolves a code segment.
+func (h *Harness) ResolveSegment(ctx context.Context, collection, name string) (aviato.SegmentResult, error) {
 	inv := h.dispatcher.Invocation(h.caller, collection)
 	return h.dispatcher.Segment(ctx, &inv, name)
 }
@@ -222,8 +233,8 @@ func (h *Harness) Search(ctx context.Context, collection, query string) (map[str
 	return h.dispatcher.Search(ctx, &inv, query)
 }
 
-// Chart computes a chart.
-func (h *Harness) Chart(ctx context.Context, name string, filter map[string]any) (map[string]any, error) {
+// ComputeChart computes a chart.
+func (h *Harness) ComputeChart(ctx context.Context, name string, filter map[string]any) (map[string]any, error) {
 	normalized, err := normalize(filter)
 	if err != nil {
 		return nil, err
@@ -231,12 +242,47 @@ func (h *Harness) Chart(ctx context.Context, name string, filter map[string]any)
 	return h.dispatcher.Chart(ctx, h.caller, name, normalized)
 }
 
+// Execute runs an action.
+//
+// Deprecated: use [Harness.ExecuteAction], named as in the other Aviato SDKs.
+func (h *Harness) Execute(ctx context.Context, collection, action string, target Target) (aviato.Result, error) {
+	return h.ExecuteAction(ctx, collection, action, target)
+}
+
+// Compute computes one field for records.
+//
+// Deprecated: use [Harness.ComputeField], named as in the other Aviato SDKs.
+func (h *Harness) Compute(ctx context.Context, collection, field string, records ...aviato.Record) ([]any, error) {
+	return h.ComputeField(ctx, collection, field, records...)
+}
+
+// RunHook runs the hooks registered for an operation.
+//
+// Deprecated: use [Harness.RunHooks], named as in the other Aviato SDKs.
+func (h *Harness) RunHook(ctx context.Context, collection string, timing aviato.HookTiming, operation aviato.HookOperation, hook Hook) (aviato.HookResult, error) {
+	return h.RunHooks(ctx, collection, timing, operation, hook)
+}
+
+// Segment resolves a code segment.
+//
+// Deprecated: use [Harness.ResolveSegment], named as in the other Aviato SDKs.
+func (h *Harness) Segment(ctx context.Context, collection, name string) (aviato.SegmentResult, error) {
+	return h.ResolveSegment(ctx, collection, name)
+}
+
+// Chart computes a chart.
+//
+// Deprecated: use [Harness.ComputeChart], named as in the other Aviato SDKs.
+func (h *Harness) Chart(ctx context.Context, name string, filter map[string]any) (map[string]any, error) {
+	return h.ComputeChart(ctx, name, filter)
+}
+
 func (h *Harness) datasourceContext(collection string) *aviato.DatasourceContext {
 	caller := h.caller
 	return &aviato.DatasourceContext{Collection: collection, Caller: &caller}
 }
 
-// ListCustomRecords lists the records of a custom collection, as the agent does with the
+// ListCustomRecords lists the records of a custom collection, as the connector does with the
 // translation strategy.
 func (h *Harness) ListCustomRecords(ctx context.Context, collection string, query aviato.DatasourceQuery) (aviato.DatasourcePage, error) {
 	filter, err := normalize(query.Filter)
@@ -295,7 +341,7 @@ func (h *Harness) DeleteCustomRecord(ctx context.Context, collection, id string)
 	return h.dispatcher.DatasourceDelete(ctx, h.datasourceContext(collection), id)
 }
 
-// ListChanges returns the changes of a replicated collection since cursor, as the agent pulls
+// ListChanges returns the changes of a replicated collection since cursor, as the connector pulls
 // them (without a caller).
 func (h *Harness) ListChanges(ctx context.Context, collection, cursor string) (aviato.DatasourceChanges, error) {
 	changes, err := h.dispatcher.ListChanges(ctx, collection, cursor)

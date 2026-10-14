@@ -1,6 +1,6 @@
 package aviato
 
-// UINode is a serializable native UI component. The agent and dashboard validate UI v1.
+// UINode is a serializable native UI component. The connector and dashboard validate UI v1.
 // Use UIBind for live data; strings are always literal text, never expressions or HTML.
 type UINode = map[string]any
 

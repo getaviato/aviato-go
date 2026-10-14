@@ -190,7 +190,7 @@ const (
 	DatasourceStrategy_DATASOURCE_STRATEGY_UNSPECIFIED DatasourceStrategy = 0
 	// Default: every read and write is forwarded to the plugin in real time.
 	DatasourceStrategy_DATASOURCE_STRATEGY_TRANSLATION DatasourceStrategy = 1
-	// The agent copies the collection into a local SQLite database with ListChanges and serves
+	// The connector copies the collection into a local SQLite database with ListChanges and serves
 	// reads from it; writes still go to the plugin.
 	DatasourceStrategy_DATASOURCE_STRATEGY_REPLICATION DatasourceStrategy = 2
 )
@@ -251,7 +251,7 @@ type Caller struct {
 	RequestId      string `protobuf:"bytes,8,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	// Short-lived token for DataService calls made while handling this call.
 	InvocationToken string `protobuf:"bytes,9,opt,name=invocation_token,json=invocationToken,proto3" json:"invocation_token,omitempty"`
-	// Base URL of the agent's DataService.
+	// Base URL of the connector's DataService.
 	DataUrl       string `protobuf:"bytes,10,opt,name=data_url,json=dataUrl,proto3" json:"data_url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -359,7 +359,7 @@ func (x *Caller) GetDataUrl() string {
 
 type GetManifestRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Highest protocol version the agent speaks.
+	// Highest protocol version the connector speaks.
 	AgentProtocolVersion uint32 `protobuf:"varint,1,opt,name=agent_protocol_version,json=agentProtocolVersion,proto3" json:"agent_protocol_version,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -463,8 +463,11 @@ type Manifest struct {
 	Datasource bool `protobuf:"varint,12,opt,name=datasource,proto3" json:"datasource,omitempty"`
 	// Declarative record summaries. No executable code or external assets.
 	Summaries []*SummaryDefinition `protobuf:"bytes,13,rep,name=summaries,proto3" json:"summaries,omitempty"`
-	// Customer-agent integrations. Credential values must never appear in the manifest.
-	Widgets       []*WidgetDefinition `protobuf:"bytes,14,rep,name=widgets,proto3" json:"widgets,omitempty"`
+	// Customer-connector integrations. Credential values must never appear in the manifest.
+	Widgets []*WidgetDefinition `protobuf:"bytes,14,rep,name=widgets,proto3" json:"widgets,omitempty"`
+	// Declarative collection layouts. A declared layout replaces the dashboard-stored one for its
+	// collection.
+	Layouts       []*LayoutDefinition `protobuf:"bytes,15,rep,name=layouts,proto3" json:"layouts,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -597,6 +600,67 @@ func (x *Manifest) GetWidgets() []*WidgetDefinition {
 	return nil
 }
 
+func (x *Manifest) GetLayouts() []*LayoutDefinition {
+	if x != nil {
+		return x.Layouts
+	}
+	return nil
+}
+
+type LayoutDefinition struct {
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	Collection string                 `protobuf:"bytes,1,opt,name=collection,proto3" json:"collection,omitempty"`
+	// Same schema as the dashboard's collection layout (`collectionLayoutSchema`): label, icon,
+	// field order and settings, search fields, default sort, virtual relations.
+	Layout        *structpb.Struct `protobuf:"bytes,2,opt,name=layout,proto3" json:"layout,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LayoutDefinition) Reset() {
+	*x = LayoutDefinition{}
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LayoutDefinition) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LayoutDefinition) ProtoMessage() {}
+
+func (x *LayoutDefinition) ProtoReflect() protoreflect.Message {
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LayoutDefinition.ProtoReflect.Descriptor instead.
+func (*LayoutDefinition) Descriptor() ([]byte, []int) {
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *LayoutDefinition) GetCollection() string {
+	if x != nil {
+		return x.Collection
+	}
+	return ""
+}
+
+func (x *LayoutDefinition) GetLayout() *structpb.Struct {
+	if x != nil {
+		return x.Layout
+	}
+	return nil
+}
+
 type SummaryDefinition struct {
 	state      protoimpl.MessageState `protogen:"open.v1"`
 	Collection string                 `protobuf:"bytes,1,opt,name=collection,proto3" json:"collection,omitempty"`
@@ -608,7 +672,7 @@ type SummaryDefinition struct {
 
 func (x *SummaryDefinition) Reset() {
 	*x = SummaryDefinition{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[4]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -620,7 +684,7 @@ func (x *SummaryDefinition) String() string {
 func (*SummaryDefinition) ProtoMessage() {}
 
 func (x *SummaryDefinition) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[4]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -633,7 +697,7 @@ func (x *SummaryDefinition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SummaryDefinition.ProtoReflect.Descriptor instead.
 func (*SummaryDefinition) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{4}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *SummaryDefinition) GetCollection() string {
@@ -671,7 +735,7 @@ type ActionDefinition struct {
 
 func (x *ActionDefinition) Reset() {
 	*x = ActionDefinition{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[5]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -683,7 +747,7 @@ func (x *ActionDefinition) String() string {
 func (*ActionDefinition) ProtoMessage() {}
 
 func (x *ActionDefinition) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[5]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -696,7 +760,7 @@ func (x *ActionDefinition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionDefinition.ProtoReflect.Descriptor instead.
 func (*ActionDefinition) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{5}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ActionDefinition) GetCollection() string {
@@ -763,7 +827,7 @@ type ComputedFieldDefinition struct {
 	Type string `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
 	// Fields to load on each record before computing.
 	Dependencies []string `protobuf:"bytes,4,rep,name=dependencies,proto3" json:"dependencies,omitempty"`
-	// When true the agent may sort and filter on the field by computing it in memory, within
+	// When true the connector may sort and filter on the field by computing it in memory, within
 	// a bounded number of records.
 	EmulateFilterSort bool     `protobuf:"varint,5,opt,name=emulate_filter_sort,json=emulateFilterSort,proto3" json:"emulate_filter_sort,omitempty"`
 	EnumValues        []string `protobuf:"bytes,6,rep,name=enum_values,json=enumValues,proto3" json:"enum_values,omitempty"`
@@ -773,7 +837,7 @@ type ComputedFieldDefinition struct {
 
 func (x *ComputedFieldDefinition) Reset() {
 	*x = ComputedFieldDefinition{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[6]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -785,7 +849,7 @@ func (x *ComputedFieldDefinition) String() string {
 func (*ComputedFieldDefinition) ProtoMessage() {}
 
 func (x *ComputedFieldDefinition) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[6]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -798,7 +862,7 @@ func (x *ComputedFieldDefinition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComputedFieldDefinition.ProtoReflect.Descriptor instead.
 func (*ComputedFieldDefinition) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{6}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ComputedFieldDefinition) GetCollection() string {
@@ -854,7 +918,7 @@ type HookDefinition struct {
 
 func (x *HookDefinition) Reset() {
 	*x = HookDefinition{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[7]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -866,7 +930,7 @@ func (x *HookDefinition) String() string {
 func (*HookDefinition) ProtoMessage() {}
 
 func (x *HookDefinition) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[7]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -879,7 +943,7 @@ func (x *HookDefinition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HookDefinition.ProtoReflect.Descriptor instead.
 func (*HookDefinition) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{7}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *HookDefinition) GetCollection() string {
@@ -913,7 +977,7 @@ type SegmentDefinition struct {
 
 func (x *SegmentDefinition) Reset() {
 	*x = SegmentDefinition{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[8]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -925,7 +989,7 @@ func (x *SegmentDefinition) String() string {
 func (*SegmentDefinition) ProtoMessage() {}
 
 func (x *SegmentDefinition) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[8]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -938,7 +1002,7 @@ func (x *SegmentDefinition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SegmentDefinition.ProtoReflect.Descriptor instead.
 func (*SegmentDefinition) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{8}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *SegmentDefinition) GetCollection() string {
@@ -958,7 +1022,7 @@ func (x *SegmentDefinition) GetName() string {
 type SearchDefinition struct {
 	state      protoimpl.MessageState `protogen:"open.v1"`
 	Collection string                 `protobuf:"bytes,1,opt,name=collection,proto3" json:"collection,omitempty"`
-	// When true the SDK replaces the agent's search entirely.
+	// When true the SDK replaces the connector's search entirely.
 	Replace       bool `protobuf:"varint,2,opt,name=replace,proto3" json:"replace,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -966,7 +1030,7 @@ type SearchDefinition struct {
 
 func (x *SearchDefinition) Reset() {
 	*x = SearchDefinition{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[9]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -978,7 +1042,7 @@ func (x *SearchDefinition) String() string {
 func (*SearchDefinition) ProtoMessage() {}
 
 func (x *SearchDefinition) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[9]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -991,7 +1055,7 @@ func (x *SearchDefinition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchDefinition.ProtoReflect.Descriptor instead.
 func (*SearchDefinition) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{9}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *SearchDefinition) GetCollection() string {
@@ -1018,7 +1082,7 @@ type ChartDefinition struct {
 
 func (x *ChartDefinition) Reset() {
 	*x = ChartDefinition{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[10]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1030,7 +1094,7 @@ func (x *ChartDefinition) String() string {
 func (*ChartDefinition) ProtoMessage() {}
 
 func (x *ChartDefinition) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[10]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1043,7 +1107,7 @@ func (x *ChartDefinition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChartDefinition.ProtoReflect.Descriptor instead.
 func (*ChartDefinition) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{10}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ChartDefinition) GetName() string {
@@ -1070,7 +1134,7 @@ type WriteOverrideDefinition struct {
 
 func (x *WriteOverrideDefinition) Reset() {
 	*x = WriteOverrideDefinition{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[11]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1082,7 +1146,7 @@ func (x *WriteOverrideDefinition) String() string {
 func (*WriteOverrideDefinition) ProtoMessage() {}
 
 func (x *WriteOverrideDefinition) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[11]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1095,7 +1159,7 @@ func (x *WriteOverrideDefinition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WriteOverrideDefinition.ProtoReflect.Descriptor instead.
 func (*WriteOverrideDefinition) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{11}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *WriteOverrideDefinition) GetCollection() string {
@@ -1127,7 +1191,7 @@ type RelationHint struct {
 
 func (x *RelationHint) Reset() {
 	*x = RelationHint{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[12]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1139,7 +1203,7 @@ func (x *RelationHint) String() string {
 func (*RelationHint) ProtoMessage() {}
 
 func (x *RelationHint) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[12]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1152,7 +1216,7 @@ func (x *RelationHint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RelationHint.ProtoReflect.Descriptor instead.
 func (*RelationHint) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{12}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *RelationHint) GetCollection() string {
@@ -1212,7 +1276,7 @@ type ActionTarget struct {
 
 func (x *ActionTarget) Reset() {
 	*x = ActionTarget{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[13]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1224,7 +1288,7 @@ func (x *ActionTarget) String() string {
 func (*ActionTarget) ProtoMessage() {}
 
 func (x *ActionTarget) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[13]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1237,7 +1301,7 @@ func (x *ActionTarget) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionTarget.ProtoReflect.Descriptor instead.
 func (*ActionTarget) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{13}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ActionTarget) GetCollection() string {
@@ -1289,7 +1353,7 @@ type ResolveFormRequest struct {
 
 func (x *ResolveFormRequest) Reset() {
 	*x = ResolveFormRequest{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[14]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1301,7 +1365,7 @@ func (x *ResolveFormRequest) String() string {
 func (*ResolveFormRequest) ProtoMessage() {}
 
 func (x *ResolveFormRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[14]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1314,7 +1378,7 @@ func (x *ResolveFormRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResolveFormRequest.ProtoReflect.Descriptor instead.
 func (*ResolveFormRequest) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{14}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ResolveFormRequest) GetCaller() *Caller {
@@ -1364,7 +1428,7 @@ type ResolveFormResponse struct {
 
 func (x *ResolveFormResponse) Reset() {
 	*x = ResolveFormResponse{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[15]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1376,7 +1440,7 @@ func (x *ResolveFormResponse) String() string {
 func (*ResolveFormResponse) ProtoMessage() {}
 
 func (x *ResolveFormResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[15]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1389,7 +1453,7 @@ func (x *ResolveFormResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResolveFormResponse.ProtoReflect.Descriptor instead.
 func (*ResolveFormResponse) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{15}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ResolveFormResponse) GetFormSchema() *structpb.Struct {
@@ -1425,7 +1489,7 @@ type ExecuteActionRequest struct {
 
 func (x *ExecuteActionRequest) Reset() {
 	*x = ExecuteActionRequest{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[16]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1437,7 +1501,7 @@ func (x *ExecuteActionRequest) String() string {
 func (*ExecuteActionRequest) ProtoMessage() {}
 
 func (x *ExecuteActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[16]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1450,7 +1514,7 @@ func (x *ExecuteActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExecuteActionRequest.ProtoReflect.Descriptor instead.
 func (*ExecuteActionRequest) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{16}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ExecuteActionRequest) GetCaller() *Caller {
@@ -1490,7 +1554,7 @@ type ExecuteActionResponse struct {
 
 func (x *ExecuteActionResponse) Reset() {
 	*x = ExecuteActionResponse{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[17]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1502,7 +1566,7 @@ func (x *ExecuteActionResponse) String() string {
 func (*ExecuteActionResponse) ProtoMessage() {}
 
 func (x *ExecuteActionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[17]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1515,7 +1579,7 @@ func (x *ExecuteActionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExecuteActionResponse.ProtoReflect.Descriptor instead.
 func (*ExecuteActionResponse) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{17}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ExecuteActionResponse) GetResult() *ActionResult {
@@ -1542,7 +1606,7 @@ type ActionResult struct {
 
 func (x *ActionResult) Reset() {
 	*x = ActionResult{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[18]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1554,7 +1618,7 @@ func (x *ActionResult) String() string {
 func (*ActionResult) ProtoMessage() {}
 
 func (x *ActionResult) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[18]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1567,7 +1631,7 @@ func (x *ActionResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActionResult.ProtoReflect.Descriptor instead.
 func (*ActionResult) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{18}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ActionResult) GetResult() isActionResult_Result {
@@ -1682,7 +1746,7 @@ type SuccessResult struct {
 
 func (x *SuccessResult) Reset() {
 	*x = SuccessResult{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[19]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1694,7 +1758,7 @@ func (x *SuccessResult) String() string {
 func (*SuccessResult) ProtoMessage() {}
 
 func (x *SuccessResult) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[19]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1707,7 +1771,7 @@ func (x *SuccessResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SuccessResult.ProtoReflect.Descriptor instead.
 func (*SuccessResult) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{19}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *SuccessResult) GetMessage() string {
@@ -1734,7 +1798,7 @@ type ErrorResult struct {
 
 func (x *ErrorResult) Reset() {
 	*x = ErrorResult{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[20]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1746,7 +1810,7 @@ func (x *ErrorResult) String() string {
 func (*ErrorResult) ProtoMessage() {}
 
 func (x *ErrorResult) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[20]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1759,7 +1823,7 @@ func (x *ErrorResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ErrorResult.ProtoReflect.Descriptor instead.
 func (*ErrorResult) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{20}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ErrorResult) GetMessage() string {
@@ -1786,7 +1850,7 @@ type HtmlResult struct {
 
 func (x *HtmlResult) Reset() {
 	*x = HtmlResult{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[21]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1798,7 +1862,7 @@ func (x *HtmlResult) String() string {
 func (*HtmlResult) ProtoMessage() {}
 
 func (x *HtmlResult) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[21]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1811,7 +1875,7 @@ func (x *HtmlResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HtmlResult.ProtoReflect.Descriptor instead.
 func (*HtmlResult) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{21}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *HtmlResult) GetHtml() string {
@@ -1823,7 +1887,7 @@ func (x *HtmlResult) GetHtml() string {
 
 type FileResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// One-time reference; the agent streams the file from GET /plugin/files/{ref} on the SDK.
+	// One-time reference; the connector streams the file from GET /plugin/files/{ref} on the SDK.
 	Ref           string `protobuf:"bytes,1,opt,name=ref,proto3" json:"ref,omitempty"`
 	Name          string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	MimeType      string `protobuf:"bytes,3,opt,name=mime_type,json=mimeType,proto3" json:"mime_type,omitempty"`
@@ -1833,7 +1897,7 @@ type FileResult struct {
 
 func (x *FileResult) Reset() {
 	*x = FileResult{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[22]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1845,7 +1909,7 @@ func (x *FileResult) String() string {
 func (*FileResult) ProtoMessage() {}
 
 func (x *FileResult) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[22]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1858,7 +1922,7 @@ func (x *FileResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FileResult.ProtoReflect.Descriptor instead.
 func (*FileResult) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{22}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *FileResult) GetRef() string {
@@ -1893,7 +1957,7 @@ type RedirectResult struct {
 
 func (x *RedirectResult) Reset() {
 	*x = RedirectResult{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[23]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1905,7 +1969,7 @@ func (x *RedirectResult) String() string {
 func (*RedirectResult) ProtoMessage() {}
 
 func (x *RedirectResult) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[23]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1918,7 +1982,7 @@ func (x *RedirectResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RedirectResult.ProtoReflect.Descriptor instead.
 func (*RedirectResult) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{23}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *RedirectResult) GetPath() string {
@@ -1948,7 +2012,7 @@ type WebhookResult struct {
 
 func (x *WebhookResult) Reset() {
 	*x = WebhookResult{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[24]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1960,7 +2024,7 @@ func (x *WebhookResult) String() string {
 func (*WebhookResult) ProtoMessage() {}
 
 func (x *WebhookResult) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[24]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1973,7 +2037,7 @@ func (x *WebhookResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WebhookResult.ProtoReflect.Descriptor instead.
 func (*WebhookResult) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{24}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *WebhookResult) GetUrl() string {
@@ -2017,7 +2081,7 @@ type ComputeFieldsRequest struct {
 
 func (x *ComputeFieldsRequest) Reset() {
 	*x = ComputeFieldsRequest{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[25]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2029,7 +2093,7 @@ func (x *ComputeFieldsRequest) String() string {
 func (*ComputeFieldsRequest) ProtoMessage() {}
 
 func (x *ComputeFieldsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[25]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2042,7 +2106,7 @@ func (x *ComputeFieldsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComputeFieldsRequest.ProtoReflect.Descriptor instead.
 func (*ComputeFieldsRequest) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{25}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ComputeFieldsRequest) GetCaller() *Caller {
@@ -2083,7 +2147,7 @@ type ComputeFieldsResponse struct {
 
 func (x *ComputeFieldsResponse) Reset() {
 	*x = ComputeFieldsResponse{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[26]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2095,7 +2159,7 @@ func (x *ComputeFieldsResponse) String() string {
 func (*ComputeFieldsResponse) ProtoMessage() {}
 
 func (x *ComputeFieldsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[26]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2108,7 +2172,7 @@ func (x *ComputeFieldsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComputeFieldsResponse.ProtoReflect.Descriptor instead.
 func (*ComputeFieldsResponse) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{26}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *ComputeFieldsResponse) GetValues() []*structpb.Struct {
@@ -2132,7 +2196,7 @@ type WriteFieldRequest struct {
 
 func (x *WriteFieldRequest) Reset() {
 	*x = WriteFieldRequest{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[27]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2144,7 +2208,7 @@ func (x *WriteFieldRequest) String() string {
 func (*WriteFieldRequest) ProtoMessage() {}
 
 func (x *WriteFieldRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[27]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2157,7 +2221,7 @@ func (x *WriteFieldRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WriteFieldRequest.ProtoReflect.Descriptor instead.
 func (*WriteFieldRequest) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{27}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *WriteFieldRequest) GetCaller() *Caller {
@@ -2205,7 +2269,7 @@ type WriteFieldResponse struct {
 
 func (x *WriteFieldResponse) Reset() {
 	*x = WriteFieldResponse{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[28]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2217,7 +2281,7 @@ func (x *WriteFieldResponse) String() string {
 func (*WriteFieldResponse) ProtoMessage() {}
 
 func (x *WriteFieldResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[28]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2230,7 +2294,7 @@ func (x *WriteFieldResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WriteFieldResponse.ProtoReflect.Descriptor instead.
 func (*WriteFieldResponse) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{28}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *WriteFieldResponse) GetPatch() *structpb.Struct {
@@ -2251,7 +2315,7 @@ type ResolveSegmentRequest struct {
 
 func (x *ResolveSegmentRequest) Reset() {
 	*x = ResolveSegmentRequest{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[29]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2263,7 +2327,7 @@ func (x *ResolveSegmentRequest) String() string {
 func (*ResolveSegmentRequest) ProtoMessage() {}
 
 func (x *ResolveSegmentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[29]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2276,7 +2340,7 @@ func (x *ResolveSegmentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResolveSegmentRequest.ProtoReflect.Descriptor instead.
 func (*ResolveSegmentRequest) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{29}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *ResolveSegmentRequest) GetCaller() *Caller {
@@ -2313,7 +2377,7 @@ type ResolveSegmentResponse struct {
 
 func (x *ResolveSegmentResponse) Reset() {
 	*x = ResolveSegmentResponse{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[30]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2325,7 +2389,7 @@ func (x *ResolveSegmentResponse) String() string {
 func (*ResolveSegmentResponse) ProtoMessage() {}
 
 func (x *ResolveSegmentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[30]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2338,7 +2402,7 @@ func (x *ResolveSegmentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResolveSegmentResponse.ProtoReflect.Descriptor instead.
 func (*ResolveSegmentResponse) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{30}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *ResolveSegmentResponse) GetResult() isResolveSegmentResponse_Result {
@@ -2371,7 +2435,7 @@ type isResolveSegmentResponse_Result interface {
 }
 
 type ResolveSegmentResponse_Filter struct {
-	// Preferred: a filter the agent applies (MongoDB query syntax).
+	// Preferred: a filter the connector applies (MongoDB query syntax).
 	Filter *structpb.Struct `protobuf:"bytes,1,opt,name=filter,proto3,oneof"`
 }
 
@@ -2393,7 +2457,7 @@ type RecordIds struct {
 
 func (x *RecordIds) Reset() {
 	*x = RecordIds{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[31]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2405,7 +2469,7 @@ func (x *RecordIds) String() string {
 func (*RecordIds) ProtoMessage() {}
 
 func (x *RecordIds) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[31]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2418,7 +2482,7 @@ func (x *RecordIds) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecordIds.ProtoReflect.Descriptor instead.
 func (*RecordIds) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{31}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *RecordIds) GetIds() []string {
@@ -2439,7 +2503,7 @@ type SearchRequest struct {
 
 func (x *SearchRequest) Reset() {
 	*x = SearchRequest{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[32]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2451,7 +2515,7 @@ func (x *SearchRequest) String() string {
 func (*SearchRequest) ProtoMessage() {}
 
 func (x *SearchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[32]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2464,7 +2528,7 @@ func (x *SearchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchRequest.ProtoReflect.Descriptor instead.
 func (*SearchRequest) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{32}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *SearchRequest) GetCaller() *Caller {
@@ -2497,7 +2561,7 @@ type SearchResponse struct {
 
 func (x *SearchResponse) Reset() {
 	*x = SearchResponse{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[33]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2509,7 +2573,7 @@ func (x *SearchResponse) String() string {
 func (*SearchResponse) ProtoMessage() {}
 
 func (x *SearchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[33]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2522,7 +2586,7 @@ func (x *SearchResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchResponse.ProtoReflect.Descriptor instead.
 func (*SearchResponse) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{33}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *SearchResponse) GetFilter() *structpb.Struct {
@@ -2543,7 +2607,7 @@ type ComputeChartRequest struct {
 
 func (x *ComputeChartRequest) Reset() {
 	*x = ComputeChartRequest{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[34]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2555,7 +2619,7 @@ func (x *ComputeChartRequest) String() string {
 func (*ComputeChartRequest) ProtoMessage() {}
 
 func (x *ComputeChartRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[34]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2568,7 +2632,7 @@ func (x *ComputeChartRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComputeChartRequest.ProtoReflect.Descriptor instead.
 func (*ComputeChartRequest) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{34}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *ComputeChartRequest) GetCaller() *Caller {
@@ -2602,7 +2666,7 @@ type ComputeChartResponse struct {
 
 func (x *ComputeChartResponse) Reset() {
 	*x = ComputeChartResponse{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[35]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2614,7 +2678,7 @@ func (x *ComputeChartResponse) String() string {
 func (*ComputeChartResponse) ProtoMessage() {}
 
 func (x *ComputeChartResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[35]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2627,7 +2691,7 @@ func (x *ComputeChartResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ComputeChartResponse.ProtoReflect.Descriptor instead.
 func (*ComputeChartResponse) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{35}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *ComputeChartResponse) GetVegaLite() *structpb.Struct {
@@ -2653,7 +2717,7 @@ type RunHookRequest struct {
 
 func (x *RunHookRequest) Reset() {
 	*x = RunHookRequest{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[36]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2665,7 +2729,7 @@ func (x *RunHookRequest) String() string {
 func (*RunHookRequest) ProtoMessage() {}
 
 func (x *RunHookRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[36]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2678,7 +2742,7 @@ func (x *RunHookRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunHookRequest.ProtoReflect.Descriptor instead.
 func (*RunHookRequest) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{36}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *RunHookRequest) GetCaller() *Caller {
@@ -2742,7 +2806,7 @@ type RunHookResponse struct {
 
 func (x *RunHookResponse) Reset() {
 	*x = RunHookResponse{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[37]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2754,7 +2818,7 @@ func (x *RunHookResponse) String() string {
 func (*RunHookResponse) ProtoMessage() {}
 
 func (x *RunHookResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[37]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2767,7 +2831,7 @@ func (x *RunHookResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunHookResponse.ProtoReflect.Descriptor instead.
 func (*RunHookResponse) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{37}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *RunHookResponse) GetRejectMessage() string {
@@ -2798,7 +2862,7 @@ type ListRequest struct {
 
 func (x *ListRequest) Reset() {
 	*x = ListRequest{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[38]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2810,7 +2874,7 @@ func (x *ListRequest) String() string {
 func (*ListRequest) ProtoMessage() {}
 
 func (x *ListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[38]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2823,7 +2887,7 @@ func (x *ListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRequest.ProtoReflect.Descriptor instead.
 func (*ListRequest) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{38}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *ListRequest) GetCollection() string {
@@ -2878,7 +2942,7 @@ type ListResponse struct {
 
 func (x *ListResponse) Reset() {
 	*x = ListResponse{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[39]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2890,7 +2954,7 @@ func (x *ListResponse) String() string {
 func (*ListResponse) ProtoMessage() {}
 
 func (x *ListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[39]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2903,7 +2967,7 @@ func (x *ListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListResponse.ProtoReflect.Descriptor instead.
 func (*ListResponse) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{39}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *ListResponse) GetRecords() []*structpb.Struct {
@@ -2930,7 +2994,7 @@ type GetRequest struct {
 
 func (x *GetRequest) Reset() {
 	*x = GetRequest{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[40]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2942,7 +3006,7 @@ func (x *GetRequest) String() string {
 func (*GetRequest) ProtoMessage() {}
 
 func (x *GetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[40]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2955,7 +3019,7 @@ func (x *GetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRequest.ProtoReflect.Descriptor instead.
 func (*GetRequest) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{40}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *GetRequest) GetCollection() string {
@@ -2981,7 +3045,7 @@ type GetResponse struct {
 
 func (x *GetResponse) Reset() {
 	*x = GetResponse{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[41]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2993,7 +3057,7 @@ func (x *GetResponse) String() string {
 func (*GetResponse) ProtoMessage() {}
 
 func (x *GetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[41]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3006,7 +3070,7 @@ func (x *GetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetResponse.ProtoReflect.Descriptor instead.
 func (*GetResponse) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{41}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *GetResponse) GetRecord() *structpb.Struct {
@@ -3026,7 +3090,7 @@ type CreateRequest struct {
 
 func (x *CreateRequest) Reset() {
 	*x = CreateRequest{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[42]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3038,7 +3102,7 @@ func (x *CreateRequest) String() string {
 func (*CreateRequest) ProtoMessage() {}
 
 func (x *CreateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[42]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3051,7 +3115,7 @@ func (x *CreateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateRequest.ProtoReflect.Descriptor instead.
 func (*CreateRequest) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{42}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *CreateRequest) GetCollection() string {
@@ -3079,7 +3143,7 @@ type UpdateRequest struct {
 
 func (x *UpdateRequest) Reset() {
 	*x = UpdateRequest{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[43]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3091,7 +3155,7 @@ func (x *UpdateRequest) String() string {
 func (*UpdateRequest) ProtoMessage() {}
 
 func (x *UpdateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[43]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3104,7 +3168,7 @@ func (x *UpdateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateRequest.ProtoReflect.Descriptor instead.
 func (*UpdateRequest) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{43}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *UpdateRequest) GetCollection() string {
@@ -3138,7 +3202,7 @@ type DeleteRequest struct {
 
 func (x *DeleteRequest) Reset() {
 	*x = DeleteRequest{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[44]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3150,7 +3214,7 @@ func (x *DeleteRequest) String() string {
 func (*DeleteRequest) ProtoMessage() {}
 
 func (x *DeleteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[44]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3163,7 +3227,7 @@ func (x *DeleteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteRequest.ProtoReflect.Descriptor instead.
 func (*DeleteRequest) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{44}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *DeleteRequest) GetCollection() string {
@@ -3189,7 +3253,7 @@ type CreateResponse struct {
 
 func (x *CreateResponse) Reset() {
 	*x = CreateResponse{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[45]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3201,7 +3265,7 @@ func (x *CreateResponse) String() string {
 func (*CreateResponse) ProtoMessage() {}
 
 func (x *CreateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[45]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3214,7 +3278,7 @@ func (x *CreateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateResponse.ProtoReflect.Descriptor instead.
 func (*CreateResponse) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{45}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *CreateResponse) GetRecord() *structpb.Struct {
@@ -3233,7 +3297,7 @@ type UpdateResponse struct {
 
 func (x *UpdateResponse) Reset() {
 	*x = UpdateResponse{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[46]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3245,7 +3309,7 @@ func (x *UpdateResponse) String() string {
 func (*UpdateResponse) ProtoMessage() {}
 
 func (x *UpdateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[46]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3258,7 +3322,7 @@ func (x *UpdateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateResponse.ProtoReflect.Descriptor instead.
 func (*UpdateResponse) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{46}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *UpdateResponse) GetRecord() *structpb.Struct {
@@ -3276,7 +3340,7 @@ type DeleteResponse struct {
 
 func (x *DeleteResponse) Reset() {
 	*x = DeleteResponse{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[47]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3288,7 +3352,7 @@ func (x *DeleteResponse) String() string {
 func (*DeleteResponse) ProtoMessage() {}
 
 func (x *DeleteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[47]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3301,7 +3365,7 @@ func (x *DeleteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteResponse.ProtoReflect.Descriptor instead.
 func (*DeleteResponse) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{47}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{48}
 }
 
 type DescribeCollectionsRequest struct {
@@ -3312,7 +3376,7 @@ type DescribeCollectionsRequest struct {
 
 func (x *DescribeCollectionsRequest) Reset() {
 	*x = DescribeCollectionsRequest{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[48]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3324,7 +3388,7 @@ func (x *DescribeCollectionsRequest) String() string {
 func (*DescribeCollectionsRequest) ProtoMessage() {}
 
 func (x *DescribeCollectionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[48]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3337,7 +3401,7 @@ func (x *DescribeCollectionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DescribeCollectionsRequest.ProtoReflect.Descriptor instead.
 func (*DescribeCollectionsRequest) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{48}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{49}
 }
 
 type DescribeCollectionsResponse struct {
@@ -3349,7 +3413,7 @@ type DescribeCollectionsResponse struct {
 
 func (x *DescribeCollectionsResponse) Reset() {
 	*x = DescribeCollectionsResponse{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[49]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3361,7 +3425,7 @@ func (x *DescribeCollectionsResponse) String() string {
 func (*DescribeCollectionsResponse) ProtoMessage() {}
 
 func (x *DescribeCollectionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[49]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3374,7 +3438,7 @@ func (x *DescribeCollectionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DescribeCollectionsResponse.ProtoReflect.Descriptor instead.
 func (*DescribeCollectionsResponse) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{49}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *DescribeCollectionsResponse) GetCollections() []*CustomCollection {
@@ -3396,7 +3460,7 @@ type CustomCollection struct {
 	Capabilities *CollectionCapabilities `protobuf:"bytes,5,opt,name=capabilities,proto3" json:"capabilities,omitempty"`
 	Strategy     DatasourceStrategy      `protobuf:"varint,6,opt,name=strategy,proto3,enum=aviato.plugin.v1.DatasourceStrategy" json:"strategy,omitempty"`
 	// Replication: seconds between two ListChanges pulls (0: on demand only, through the
-	// agent's /plugin-data/replicas/{collection}/refresh endpoint).
+	// connector's /plugin-data/replicas/{collection}/refresh endpoint).
 	ReplicationIntervalSeconds uint32 `protobuf:"varint,7,opt,name=replication_interval_seconds,json=replicationIntervalSeconds,proto3" json:"replication_interval_seconds,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
@@ -3404,7 +3468,7 @@ type CustomCollection struct {
 
 func (x *CustomCollection) Reset() {
 	*x = CustomCollection{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[50]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3416,7 +3480,7 @@ func (x *CustomCollection) String() string {
 func (*CustomCollection) ProtoMessage() {}
 
 func (x *CustomCollection) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[50]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3429,7 +3493,7 @@ func (x *CustomCollection) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CustomCollection.ProtoReflect.Descriptor instead.
 func (*CustomCollection) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{50}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *CustomCollection) GetName() string {
@@ -3496,7 +3560,7 @@ type CustomField struct {
 
 func (x *CustomField) Reset() {
 	*x = CustomField{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[51]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3508,7 +3572,7 @@ func (x *CustomField) String() string {
 func (*CustomField) ProtoMessage() {}
 
 func (x *CustomField) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[51]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3521,7 +3585,7 @@ func (x *CustomField) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CustomField.ProtoReflect.Descriptor instead.
 func (*CustomField) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{51}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *CustomField) GetName() string {
@@ -3566,7 +3630,7 @@ func (x *CustomField) GetHasDefault() bool {
 	return false
 }
 
-// What the plugin evaluates itself. Anything else is evaluated by the agent in memory, over at
+// What the plugin evaluates itself. Anything else is evaluated by the connector in memory, over at
 // most 2,000 records.
 type CollectionCapabilities struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -3586,7 +3650,7 @@ type CollectionCapabilities struct {
 
 func (x *CollectionCapabilities) Reset() {
 	*x = CollectionCapabilities{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[52]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3598,7 +3662,7 @@ func (x *CollectionCapabilities) String() string {
 func (*CollectionCapabilities) ProtoMessage() {}
 
 func (x *CollectionCapabilities) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[52]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3611,7 +3675,7 @@ func (x *CollectionCapabilities) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CollectionCapabilities.ProtoReflect.Descriptor instead.
 func (*CollectionCapabilities) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{52}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *CollectionCapabilities) GetFilterOperators() []string {
@@ -3677,7 +3741,7 @@ type DatasourceServiceListRequest struct {
 
 func (x *DatasourceServiceListRequest) Reset() {
 	*x = DatasourceServiceListRequest{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[53]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3689,7 +3753,7 @@ func (x *DatasourceServiceListRequest) String() string {
 func (*DatasourceServiceListRequest) ProtoMessage() {}
 
 func (x *DatasourceServiceListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[53]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3702,7 +3766,7 @@ func (x *DatasourceServiceListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatasourceServiceListRequest.ProtoReflect.Descriptor instead.
 func (*DatasourceServiceListRequest) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{53}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *DatasourceServiceListRequest) GetCaller() *Caller {
@@ -3771,7 +3835,7 @@ type DatasourceServiceListResponse struct {
 
 func (x *DatasourceServiceListResponse) Reset() {
 	*x = DatasourceServiceListResponse{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[54]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3783,7 +3847,7 @@ func (x *DatasourceServiceListResponse) String() string {
 func (*DatasourceServiceListResponse) ProtoMessage() {}
 
 func (x *DatasourceServiceListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[54]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3796,7 +3860,7 @@ func (x *DatasourceServiceListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatasourceServiceListResponse.ProtoReflect.Descriptor instead.
 func (*DatasourceServiceListResponse) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{54}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *DatasourceServiceListResponse) GetRecords() []*structpb.Struct {
@@ -3824,7 +3888,7 @@ type DatasourceServiceGetRequest struct {
 
 func (x *DatasourceServiceGetRequest) Reset() {
 	*x = DatasourceServiceGetRequest{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[55]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3836,7 +3900,7 @@ func (x *DatasourceServiceGetRequest) String() string {
 func (*DatasourceServiceGetRequest) ProtoMessage() {}
 
 func (x *DatasourceServiceGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[55]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3849,7 +3913,7 @@ func (x *DatasourceServiceGetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatasourceServiceGetRequest.ProtoReflect.Descriptor instead.
 func (*DatasourceServiceGetRequest) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{55}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *DatasourceServiceGetRequest) GetCaller() *Caller {
@@ -3883,7 +3947,7 @@ type DatasourceServiceGetResponse struct {
 
 func (x *DatasourceServiceGetResponse) Reset() {
 	*x = DatasourceServiceGetResponse{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[56]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3895,7 +3959,7 @@ func (x *DatasourceServiceGetResponse) String() string {
 func (*DatasourceServiceGetResponse) ProtoMessage() {}
 
 func (x *DatasourceServiceGetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[56]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3908,7 +3972,7 @@ func (x *DatasourceServiceGetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatasourceServiceGetResponse.ProtoReflect.Descriptor instead.
 func (*DatasourceServiceGetResponse) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{56}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *DatasourceServiceGetResponse) GetRecord() *structpb.Struct {
@@ -3929,7 +3993,7 @@ type DatasourceServiceCreateRequest struct {
 
 func (x *DatasourceServiceCreateRequest) Reset() {
 	*x = DatasourceServiceCreateRequest{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[57]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3941,7 +4005,7 @@ func (x *DatasourceServiceCreateRequest) String() string {
 func (*DatasourceServiceCreateRequest) ProtoMessage() {}
 
 func (x *DatasourceServiceCreateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[57]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3954,7 +4018,7 @@ func (x *DatasourceServiceCreateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatasourceServiceCreateRequest.ProtoReflect.Descriptor instead.
 func (*DatasourceServiceCreateRequest) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{57}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *DatasourceServiceCreateRequest) GetCaller() *Caller {
@@ -3988,7 +4052,7 @@ type DatasourceServiceCreateResponse struct {
 
 func (x *DatasourceServiceCreateResponse) Reset() {
 	*x = DatasourceServiceCreateResponse{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[58]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4000,7 +4064,7 @@ func (x *DatasourceServiceCreateResponse) String() string {
 func (*DatasourceServiceCreateResponse) ProtoMessage() {}
 
 func (x *DatasourceServiceCreateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[58]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4013,7 +4077,7 @@ func (x *DatasourceServiceCreateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatasourceServiceCreateResponse.ProtoReflect.Descriptor instead.
 func (*DatasourceServiceCreateResponse) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{58}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{59}
 }
 
 func (x *DatasourceServiceCreateResponse) GetRecord() *structpb.Struct {
@@ -4035,7 +4099,7 @@ type DatasourceServiceUpdateRequest struct {
 
 func (x *DatasourceServiceUpdateRequest) Reset() {
 	*x = DatasourceServiceUpdateRequest{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[59]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4047,7 +4111,7 @@ func (x *DatasourceServiceUpdateRequest) String() string {
 func (*DatasourceServiceUpdateRequest) ProtoMessage() {}
 
 func (x *DatasourceServiceUpdateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[59]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4060,7 +4124,7 @@ func (x *DatasourceServiceUpdateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatasourceServiceUpdateRequest.ProtoReflect.Descriptor instead.
 func (*DatasourceServiceUpdateRequest) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{59}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *DatasourceServiceUpdateRequest) GetCaller() *Caller {
@@ -4100,7 +4164,7 @@ type DatasourceServiceUpdateResponse struct {
 
 func (x *DatasourceServiceUpdateResponse) Reset() {
 	*x = DatasourceServiceUpdateResponse{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[60]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4112,7 +4176,7 @@ func (x *DatasourceServiceUpdateResponse) String() string {
 func (*DatasourceServiceUpdateResponse) ProtoMessage() {}
 
 func (x *DatasourceServiceUpdateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[60]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4125,7 +4189,7 @@ func (x *DatasourceServiceUpdateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatasourceServiceUpdateResponse.ProtoReflect.Descriptor instead.
 func (*DatasourceServiceUpdateResponse) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{60}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *DatasourceServiceUpdateResponse) GetRecord() *structpb.Struct {
@@ -4146,7 +4210,7 @@ type DatasourceServiceDeleteRequest struct {
 
 func (x *DatasourceServiceDeleteRequest) Reset() {
 	*x = DatasourceServiceDeleteRequest{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[61]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4158,7 +4222,7 @@ func (x *DatasourceServiceDeleteRequest) String() string {
 func (*DatasourceServiceDeleteRequest) ProtoMessage() {}
 
 func (x *DatasourceServiceDeleteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[61]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4171,7 +4235,7 @@ func (x *DatasourceServiceDeleteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatasourceServiceDeleteRequest.ProtoReflect.Descriptor instead.
 func (*DatasourceServiceDeleteRequest) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{61}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{62}
 }
 
 func (x *DatasourceServiceDeleteRequest) GetCaller() *Caller {
@@ -4203,7 +4267,7 @@ type DatasourceServiceDeleteResponse struct {
 
 func (x *DatasourceServiceDeleteResponse) Reset() {
 	*x = DatasourceServiceDeleteResponse{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[62]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4215,7 +4279,7 @@ func (x *DatasourceServiceDeleteResponse) String() string {
 func (*DatasourceServiceDeleteResponse) ProtoMessage() {}
 
 func (x *DatasourceServiceDeleteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[62]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4228,7 +4292,7 @@ func (x *DatasourceServiceDeleteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatasourceServiceDeleteResponse.ProtoReflect.Descriptor instead.
 func (*DatasourceServiceDeleteResponse) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{62}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{63}
 }
 
 type ListChangesRequest struct {
@@ -4242,7 +4306,7 @@ type ListChangesRequest struct {
 
 func (x *ListChangesRequest) Reset() {
 	*x = ListChangesRequest{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[63]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4254,7 +4318,7 @@ func (x *ListChangesRequest) String() string {
 func (*ListChangesRequest) ProtoMessage() {}
 
 func (x *ListChangesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[63]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4267,7 +4331,7 @@ func (x *ListChangesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListChangesRequest.ProtoReflect.Descriptor instead.
 func (*ListChangesRequest) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{63}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{64}
 }
 
 func (x *ListChangesRequest) GetCollection() string {
@@ -4292,7 +4356,7 @@ type ListChangesResponse struct {
 	DeletedIds []string `protobuf:"bytes,2,rep,name=deleted_ids,json=deletedIds,proto3" json:"deleted_ids,omitempty"`
 	// Cursor of the next call.
 	NextCursor string `protobuf:"bytes,3,opt,name=next_cursor,json=nextCursor,proto3" json:"next_cursor,omitempty"`
-	// True when more changes are waiting: the agent calls again right away.
+	// True when more changes are waiting: the connector calls again right away.
 	HasMore       bool `protobuf:"varint,4,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -4300,7 +4364,7 @@ type ListChangesResponse struct {
 
 func (x *ListChangesResponse) Reset() {
 	*x = ListChangesResponse{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[64]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4312,7 +4376,7 @@ func (x *ListChangesResponse) String() string {
 func (*ListChangesResponse) ProtoMessage() {}
 
 func (x *ListChangesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[64]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4325,7 +4389,7 @@ func (x *ListChangesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListChangesResponse.ProtoReflect.Descriptor instead.
 func (*ListChangesResponse) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{64}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *ListChangesResponse) GetRecords() []*structpb.Struct {
@@ -4356,7 +4420,7 @@ func (x *ListChangesResponse) GetHasMore() bool {
 	return false
 }
 
-// Ready-to-use read-only record integrations, executed on the customer agent.
+// Ready-to-use read-only record integrations, executed on the customer connector.
 type WidgetDefinition struct {
 	state      protoimpl.MessageState `protogen:"open.v1"`
 	Collection string                 `protobuf:"bytes,1,opt,name=collection,proto3" json:"collection,omitempty"`
@@ -4367,7 +4431,7 @@ type WidgetDefinition struct {
 	// Local column containing the provider ID, optionally on a belongsTo relation.
 	BindingField    string `protobuf:"bytes,6,opt,name=binding_field,json=bindingField,proto3" json:"binding_field,omitempty"`
 	BindingRelation string `protobuf:"bytes,7,opt,name=binding_relation,json=bindingRelation,proto3" json:"binding_relation,omitempty"`
-	// Environment variable on the customer agent, never the credential itself.
+	// Environment variable on the customer connector, never the credential itself.
 	CredentialEnv string `protobuf:"bytes,8,opt,name=credential_env,json=credentialEnv,proto3" json:"credential_env,omitempty"`
 	// Explicit operator confirmation that the credential has only read permissions.
 	ReadOnly bool `protobuf:"varint,9,opt,name=read_only,json=readOnly,proto3" json:"read_only,omitempty"`
@@ -4379,7 +4443,7 @@ type WidgetDefinition struct {
 
 func (x *WidgetDefinition) Reset() {
 	*x = WidgetDefinition{}
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[65]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4391,7 +4455,7 @@ func (x *WidgetDefinition) String() string {
 func (*WidgetDefinition) ProtoMessage() {}
 
 func (x *WidgetDefinition) ProtoReflect() protoreflect.Message {
-	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[65]
+	mi := &file_aviato_plugin_v1_plugin_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4404,7 +4468,7 @@ func (x *WidgetDefinition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WidgetDefinition.ProtoReflect.Descriptor instead.
 func (*WidgetDefinition) Descriptor() ([]byte, []int) {
-	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{65}
+	return file_aviato_plugin_v1_plugin_proto_rawDescGZIP(), []int{66}
 }
 
 func (x *WidgetDefinition) GetCollection() string {
@@ -4500,7 +4564,7 @@ const file_aviato_plugin_v1_plugin_proto_rawDesc = "" +
 	"\x12GetManifestRequest\x124\n" +
 	"\x16agent_protocol_version\x18\x01 \x01(\rR\x14agentProtocolVersion\"M\n" +
 	"\x13GetManifestResponse\x126\n" +
-	"\bmanifest\x18\x01 \x01(\v2\x1a.aviato.plugin.v1.ManifestR\bmanifest\"\xb3\x06\n" +
+	"\bmanifest\x18\x01 \x01(\v2\x1a.aviato.plugin.v1.ManifestR\bmanifest\"\xf1\x06\n" +
 	"\bManifest\x12)\n" +
 	"\x10protocol_version\x18\x01 \x01(\rR\x0fprotocolVersion\x12\x19\n" +
 	"\bsdk_name\x18\x02 \x01(\tR\asdkName\x12\x1f\n" +
@@ -4519,7 +4583,13 @@ const file_aviato_plugin_v1_plugin_proto_rawDesc = "" +
 	"datasource\x18\f \x01(\bR\n" +
 	"datasource\x12A\n" +
 	"\tsummaries\x18\r \x03(\v2#.aviato.plugin.v1.SummaryDefinitionR\tsummaries\x12<\n" +
-	"\awidgets\x18\x0e \x03(\v2\".aviato.plugin.v1.WidgetDefinitionR\awidgets\"h\n" +
+	"\awidgets\x18\x0e \x03(\v2\".aviato.plugin.v1.WidgetDefinitionR\awidgets\x12<\n" +
+	"\alayouts\x18\x0f \x03(\v2\".aviato.plugin.v1.LayoutDefinitionR\alayouts\"c\n" +
+	"\x10LayoutDefinition\x12\x1e\n" +
+	"\n" +
+	"collection\x18\x01 \x01(\tR\n" +
+	"collection\x12/\n" +
+	"\x06layout\x18\x02 \x01(\v2\x17.google.protobuf.StructR\x06layout\"h\n" +
 	"\x11SummaryDefinition\x12\x1e\n" +
 	"\n" +
 	"collection\x18\x01 \x01(\tR\n" +
@@ -4906,7 +4976,7 @@ func file_aviato_plugin_v1_plugin_proto_rawDescGZIP() []byte {
 }
 
 var file_aviato_plugin_v1_plugin_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_aviato_plugin_v1_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 67)
+var file_aviato_plugin_v1_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 68)
 var file_aviato_plugin_v1_plugin_proto_goTypes = []any{
 	(ActionScope)(0),                        // 0: aviato.plugin.v1.ActionScope
 	(HookTiming)(0),                         // 1: aviato.plugin.v1.HookTiming
@@ -4916,200 +4986,203 @@ var file_aviato_plugin_v1_plugin_proto_goTypes = []any{
 	(*GetManifestRequest)(nil),              // 5: aviato.plugin.v1.GetManifestRequest
 	(*GetManifestResponse)(nil),             // 6: aviato.plugin.v1.GetManifestResponse
 	(*Manifest)(nil),                        // 7: aviato.plugin.v1.Manifest
-	(*SummaryDefinition)(nil),               // 8: aviato.plugin.v1.SummaryDefinition
-	(*ActionDefinition)(nil),                // 9: aviato.plugin.v1.ActionDefinition
-	(*ComputedFieldDefinition)(nil),         // 10: aviato.plugin.v1.ComputedFieldDefinition
-	(*HookDefinition)(nil),                  // 11: aviato.plugin.v1.HookDefinition
-	(*SegmentDefinition)(nil),               // 12: aviato.plugin.v1.SegmentDefinition
-	(*SearchDefinition)(nil),                // 13: aviato.plugin.v1.SearchDefinition
-	(*ChartDefinition)(nil),                 // 14: aviato.plugin.v1.ChartDefinition
-	(*WriteOverrideDefinition)(nil),         // 15: aviato.plugin.v1.WriteOverrideDefinition
-	(*RelationHint)(nil),                    // 16: aviato.plugin.v1.RelationHint
-	(*ActionTarget)(nil),                    // 17: aviato.plugin.v1.ActionTarget
-	(*ResolveFormRequest)(nil),              // 18: aviato.plugin.v1.ResolveFormRequest
-	(*ResolveFormResponse)(nil),             // 19: aviato.plugin.v1.ResolveFormResponse
-	(*ExecuteActionRequest)(nil),            // 20: aviato.plugin.v1.ExecuteActionRequest
-	(*ExecuteActionResponse)(nil),           // 21: aviato.plugin.v1.ExecuteActionResponse
-	(*ActionResult)(nil),                    // 22: aviato.plugin.v1.ActionResult
-	(*SuccessResult)(nil),                   // 23: aviato.plugin.v1.SuccessResult
-	(*ErrorResult)(nil),                     // 24: aviato.plugin.v1.ErrorResult
-	(*HtmlResult)(nil),                      // 25: aviato.plugin.v1.HtmlResult
-	(*FileResult)(nil),                      // 26: aviato.plugin.v1.FileResult
-	(*RedirectResult)(nil),                  // 27: aviato.plugin.v1.RedirectResult
-	(*WebhookResult)(nil),                   // 28: aviato.plugin.v1.WebhookResult
-	(*ComputeFieldsRequest)(nil),            // 29: aviato.plugin.v1.ComputeFieldsRequest
-	(*ComputeFieldsResponse)(nil),           // 30: aviato.plugin.v1.ComputeFieldsResponse
-	(*WriteFieldRequest)(nil),               // 31: aviato.plugin.v1.WriteFieldRequest
-	(*WriteFieldResponse)(nil),              // 32: aviato.plugin.v1.WriteFieldResponse
-	(*ResolveSegmentRequest)(nil),           // 33: aviato.plugin.v1.ResolveSegmentRequest
-	(*ResolveSegmentResponse)(nil),          // 34: aviato.plugin.v1.ResolveSegmentResponse
-	(*RecordIds)(nil),                       // 35: aviato.plugin.v1.RecordIds
-	(*SearchRequest)(nil),                   // 36: aviato.plugin.v1.SearchRequest
-	(*SearchResponse)(nil),                  // 37: aviato.plugin.v1.SearchResponse
-	(*ComputeChartRequest)(nil),             // 38: aviato.plugin.v1.ComputeChartRequest
-	(*ComputeChartResponse)(nil),            // 39: aviato.plugin.v1.ComputeChartResponse
-	(*RunHookRequest)(nil),                  // 40: aviato.plugin.v1.RunHookRequest
-	(*RunHookResponse)(nil),                 // 41: aviato.plugin.v1.RunHookResponse
-	(*ListRequest)(nil),                     // 42: aviato.plugin.v1.ListRequest
-	(*ListResponse)(nil),                    // 43: aviato.plugin.v1.ListResponse
-	(*GetRequest)(nil),                      // 44: aviato.plugin.v1.GetRequest
-	(*GetResponse)(nil),                     // 45: aviato.plugin.v1.GetResponse
-	(*CreateRequest)(nil),                   // 46: aviato.plugin.v1.CreateRequest
-	(*UpdateRequest)(nil),                   // 47: aviato.plugin.v1.UpdateRequest
-	(*DeleteRequest)(nil),                   // 48: aviato.plugin.v1.DeleteRequest
-	(*CreateResponse)(nil),                  // 49: aviato.plugin.v1.CreateResponse
-	(*UpdateResponse)(nil),                  // 50: aviato.plugin.v1.UpdateResponse
-	(*DeleteResponse)(nil),                  // 51: aviato.plugin.v1.DeleteResponse
-	(*DescribeCollectionsRequest)(nil),      // 52: aviato.plugin.v1.DescribeCollectionsRequest
-	(*DescribeCollectionsResponse)(nil),     // 53: aviato.plugin.v1.DescribeCollectionsResponse
-	(*CustomCollection)(nil),                // 54: aviato.plugin.v1.CustomCollection
-	(*CustomField)(nil),                     // 55: aviato.plugin.v1.CustomField
-	(*CollectionCapabilities)(nil),          // 56: aviato.plugin.v1.CollectionCapabilities
-	(*DatasourceServiceListRequest)(nil),    // 57: aviato.plugin.v1.DatasourceServiceListRequest
-	(*DatasourceServiceListResponse)(nil),   // 58: aviato.plugin.v1.DatasourceServiceListResponse
-	(*DatasourceServiceGetRequest)(nil),     // 59: aviato.plugin.v1.DatasourceServiceGetRequest
-	(*DatasourceServiceGetResponse)(nil),    // 60: aviato.plugin.v1.DatasourceServiceGetResponse
-	(*DatasourceServiceCreateRequest)(nil),  // 61: aviato.plugin.v1.DatasourceServiceCreateRequest
-	(*DatasourceServiceCreateResponse)(nil), // 62: aviato.plugin.v1.DatasourceServiceCreateResponse
-	(*DatasourceServiceUpdateRequest)(nil),  // 63: aviato.plugin.v1.DatasourceServiceUpdateRequest
-	(*DatasourceServiceUpdateResponse)(nil), // 64: aviato.plugin.v1.DatasourceServiceUpdateResponse
-	(*DatasourceServiceDeleteRequest)(nil),  // 65: aviato.plugin.v1.DatasourceServiceDeleteRequest
-	(*DatasourceServiceDeleteResponse)(nil), // 66: aviato.plugin.v1.DatasourceServiceDeleteResponse
-	(*ListChangesRequest)(nil),              // 67: aviato.plugin.v1.ListChangesRequest
-	(*ListChangesResponse)(nil),             // 68: aviato.plugin.v1.ListChangesResponse
-	(*WidgetDefinition)(nil),                // 69: aviato.plugin.v1.WidgetDefinition
-	nil,                                     // 70: aviato.plugin.v1.WebhookResult.HeadersEntry
-	(*structpb.Struct)(nil),                 // 71: google.protobuf.Struct
-	(*structpb.Value)(nil),                  // 72: google.protobuf.Value
+	(*LayoutDefinition)(nil),                // 8: aviato.plugin.v1.LayoutDefinition
+	(*SummaryDefinition)(nil),               // 9: aviato.plugin.v1.SummaryDefinition
+	(*ActionDefinition)(nil),                // 10: aviato.plugin.v1.ActionDefinition
+	(*ComputedFieldDefinition)(nil),         // 11: aviato.plugin.v1.ComputedFieldDefinition
+	(*HookDefinition)(nil),                  // 12: aviato.plugin.v1.HookDefinition
+	(*SegmentDefinition)(nil),               // 13: aviato.plugin.v1.SegmentDefinition
+	(*SearchDefinition)(nil),                // 14: aviato.plugin.v1.SearchDefinition
+	(*ChartDefinition)(nil),                 // 15: aviato.plugin.v1.ChartDefinition
+	(*WriteOverrideDefinition)(nil),         // 16: aviato.plugin.v1.WriteOverrideDefinition
+	(*RelationHint)(nil),                    // 17: aviato.plugin.v1.RelationHint
+	(*ActionTarget)(nil),                    // 18: aviato.plugin.v1.ActionTarget
+	(*ResolveFormRequest)(nil),              // 19: aviato.plugin.v1.ResolveFormRequest
+	(*ResolveFormResponse)(nil),             // 20: aviato.plugin.v1.ResolveFormResponse
+	(*ExecuteActionRequest)(nil),            // 21: aviato.plugin.v1.ExecuteActionRequest
+	(*ExecuteActionResponse)(nil),           // 22: aviato.plugin.v1.ExecuteActionResponse
+	(*ActionResult)(nil),                    // 23: aviato.plugin.v1.ActionResult
+	(*SuccessResult)(nil),                   // 24: aviato.plugin.v1.SuccessResult
+	(*ErrorResult)(nil),                     // 25: aviato.plugin.v1.ErrorResult
+	(*HtmlResult)(nil),                      // 26: aviato.plugin.v1.HtmlResult
+	(*FileResult)(nil),                      // 27: aviato.plugin.v1.FileResult
+	(*RedirectResult)(nil),                  // 28: aviato.plugin.v1.RedirectResult
+	(*WebhookResult)(nil),                   // 29: aviato.plugin.v1.WebhookResult
+	(*ComputeFieldsRequest)(nil),            // 30: aviato.plugin.v1.ComputeFieldsRequest
+	(*ComputeFieldsResponse)(nil),           // 31: aviato.plugin.v1.ComputeFieldsResponse
+	(*WriteFieldRequest)(nil),               // 32: aviato.plugin.v1.WriteFieldRequest
+	(*WriteFieldResponse)(nil),              // 33: aviato.plugin.v1.WriteFieldResponse
+	(*ResolveSegmentRequest)(nil),           // 34: aviato.plugin.v1.ResolveSegmentRequest
+	(*ResolveSegmentResponse)(nil),          // 35: aviato.plugin.v1.ResolveSegmentResponse
+	(*RecordIds)(nil),                       // 36: aviato.plugin.v1.RecordIds
+	(*SearchRequest)(nil),                   // 37: aviato.plugin.v1.SearchRequest
+	(*SearchResponse)(nil),                  // 38: aviato.plugin.v1.SearchResponse
+	(*ComputeChartRequest)(nil),             // 39: aviato.plugin.v1.ComputeChartRequest
+	(*ComputeChartResponse)(nil),            // 40: aviato.plugin.v1.ComputeChartResponse
+	(*RunHookRequest)(nil),                  // 41: aviato.plugin.v1.RunHookRequest
+	(*RunHookResponse)(nil),                 // 42: aviato.plugin.v1.RunHookResponse
+	(*ListRequest)(nil),                     // 43: aviato.plugin.v1.ListRequest
+	(*ListResponse)(nil),                    // 44: aviato.plugin.v1.ListResponse
+	(*GetRequest)(nil),                      // 45: aviato.plugin.v1.GetRequest
+	(*GetResponse)(nil),                     // 46: aviato.plugin.v1.GetResponse
+	(*CreateRequest)(nil),                   // 47: aviato.plugin.v1.CreateRequest
+	(*UpdateRequest)(nil),                   // 48: aviato.plugin.v1.UpdateRequest
+	(*DeleteRequest)(nil),                   // 49: aviato.plugin.v1.DeleteRequest
+	(*CreateResponse)(nil),                  // 50: aviato.plugin.v1.CreateResponse
+	(*UpdateResponse)(nil),                  // 51: aviato.plugin.v1.UpdateResponse
+	(*DeleteResponse)(nil),                  // 52: aviato.plugin.v1.DeleteResponse
+	(*DescribeCollectionsRequest)(nil),      // 53: aviato.plugin.v1.DescribeCollectionsRequest
+	(*DescribeCollectionsResponse)(nil),     // 54: aviato.plugin.v1.DescribeCollectionsResponse
+	(*CustomCollection)(nil),                // 55: aviato.plugin.v1.CustomCollection
+	(*CustomField)(nil),                     // 56: aviato.plugin.v1.CustomField
+	(*CollectionCapabilities)(nil),          // 57: aviato.plugin.v1.CollectionCapabilities
+	(*DatasourceServiceListRequest)(nil),    // 58: aviato.plugin.v1.DatasourceServiceListRequest
+	(*DatasourceServiceListResponse)(nil),   // 59: aviato.plugin.v1.DatasourceServiceListResponse
+	(*DatasourceServiceGetRequest)(nil),     // 60: aviato.plugin.v1.DatasourceServiceGetRequest
+	(*DatasourceServiceGetResponse)(nil),    // 61: aviato.plugin.v1.DatasourceServiceGetResponse
+	(*DatasourceServiceCreateRequest)(nil),  // 62: aviato.plugin.v1.DatasourceServiceCreateRequest
+	(*DatasourceServiceCreateResponse)(nil), // 63: aviato.plugin.v1.DatasourceServiceCreateResponse
+	(*DatasourceServiceUpdateRequest)(nil),  // 64: aviato.plugin.v1.DatasourceServiceUpdateRequest
+	(*DatasourceServiceUpdateResponse)(nil), // 65: aviato.plugin.v1.DatasourceServiceUpdateResponse
+	(*DatasourceServiceDeleteRequest)(nil),  // 66: aviato.plugin.v1.DatasourceServiceDeleteRequest
+	(*DatasourceServiceDeleteResponse)(nil), // 67: aviato.plugin.v1.DatasourceServiceDeleteResponse
+	(*ListChangesRequest)(nil),              // 68: aviato.plugin.v1.ListChangesRequest
+	(*ListChangesResponse)(nil),             // 69: aviato.plugin.v1.ListChangesResponse
+	(*WidgetDefinition)(nil),                // 70: aviato.plugin.v1.WidgetDefinition
+	nil,                                     // 71: aviato.plugin.v1.WebhookResult.HeadersEntry
+	(*structpb.Struct)(nil),                 // 72: google.protobuf.Struct
+	(*structpb.Value)(nil),                  // 73: google.protobuf.Value
 }
 var file_aviato_plugin_v1_plugin_proto_depIdxs = []int32{
 	7,   // 0: aviato.plugin.v1.GetManifestResponse.manifest:type_name -> aviato.plugin.v1.Manifest
-	9,   // 1: aviato.plugin.v1.Manifest.actions:type_name -> aviato.plugin.v1.ActionDefinition
-	10,  // 2: aviato.plugin.v1.Manifest.computed_fields:type_name -> aviato.plugin.v1.ComputedFieldDefinition
-	11,  // 3: aviato.plugin.v1.Manifest.hooks:type_name -> aviato.plugin.v1.HookDefinition
-	12,  // 4: aviato.plugin.v1.Manifest.segments:type_name -> aviato.plugin.v1.SegmentDefinition
-	13,  // 5: aviato.plugin.v1.Manifest.searches:type_name -> aviato.plugin.v1.SearchDefinition
-	14,  // 6: aviato.plugin.v1.Manifest.charts:type_name -> aviato.plugin.v1.ChartDefinition
-	15,  // 7: aviato.plugin.v1.Manifest.write_overrides:type_name -> aviato.plugin.v1.WriteOverrideDefinition
-	16,  // 8: aviato.plugin.v1.Manifest.relation_hints:type_name -> aviato.plugin.v1.RelationHint
-	8,   // 9: aviato.plugin.v1.Manifest.summaries:type_name -> aviato.plugin.v1.SummaryDefinition
-	69,  // 10: aviato.plugin.v1.Manifest.widgets:type_name -> aviato.plugin.v1.WidgetDefinition
-	71,  // 11: aviato.plugin.v1.SummaryDefinition.document:type_name -> google.protobuf.Struct
-	0,   // 12: aviato.plugin.v1.ActionDefinition.scope:type_name -> aviato.plugin.v1.ActionScope
-	71,  // 13: aviato.plugin.v1.ActionDefinition.form_schema:type_name -> google.protobuf.Struct
-	71,  // 14: aviato.plugin.v1.ActionDefinition.form_ui_schema:type_name -> google.protobuf.Struct
-	1,   // 15: aviato.plugin.v1.HookDefinition.timing:type_name -> aviato.plugin.v1.HookTiming
-	2,   // 16: aviato.plugin.v1.HookDefinition.operation:type_name -> aviato.plugin.v1.HookOperation
-	71,  // 17: aviato.plugin.v1.ActionTarget.filter:type_name -> google.protobuf.Struct
-	4,   // 18: aviato.plugin.v1.ResolveFormRequest.caller:type_name -> aviato.plugin.v1.Caller
-	17,  // 19: aviato.plugin.v1.ResolveFormRequest.target:type_name -> aviato.plugin.v1.ActionTarget
-	71,  // 20: aviato.plugin.v1.ResolveFormRequest.values:type_name -> google.protobuf.Struct
-	71,  // 21: aviato.plugin.v1.ResolveFormResponse.form_schema:type_name -> google.protobuf.Struct
-	71,  // 22: aviato.plugin.v1.ResolveFormResponse.form_ui_schema:type_name -> google.protobuf.Struct
-	71,  // 23: aviato.plugin.v1.ResolveFormResponse.values:type_name -> google.protobuf.Struct
-	4,   // 24: aviato.plugin.v1.ExecuteActionRequest.caller:type_name -> aviato.plugin.v1.Caller
-	17,  // 25: aviato.plugin.v1.ExecuteActionRequest.target:type_name -> aviato.plugin.v1.ActionTarget
-	71,  // 26: aviato.plugin.v1.ExecuteActionRequest.values:type_name -> google.protobuf.Struct
-	22,  // 27: aviato.plugin.v1.ExecuteActionResponse.result:type_name -> aviato.plugin.v1.ActionResult
-	23,  // 28: aviato.plugin.v1.ActionResult.success:type_name -> aviato.plugin.v1.SuccessResult
-	24,  // 29: aviato.plugin.v1.ActionResult.error:type_name -> aviato.plugin.v1.ErrorResult
-	25,  // 30: aviato.plugin.v1.ActionResult.html:type_name -> aviato.plugin.v1.HtmlResult
-	26,  // 31: aviato.plugin.v1.ActionResult.file:type_name -> aviato.plugin.v1.FileResult
-	27,  // 32: aviato.plugin.v1.ActionResult.redirect:type_name -> aviato.plugin.v1.RedirectResult
-	28,  // 33: aviato.plugin.v1.ActionResult.webhook:type_name -> aviato.plugin.v1.WebhookResult
-	70,  // 34: aviato.plugin.v1.WebhookResult.headers:type_name -> aviato.plugin.v1.WebhookResult.HeadersEntry
-	4,   // 35: aviato.plugin.v1.ComputeFieldsRequest.caller:type_name -> aviato.plugin.v1.Caller
-	71,  // 36: aviato.plugin.v1.ComputeFieldsRequest.records:type_name -> google.protobuf.Struct
-	71,  // 37: aviato.plugin.v1.ComputeFieldsResponse.values:type_name -> google.protobuf.Struct
-	4,   // 38: aviato.plugin.v1.WriteFieldRequest.caller:type_name -> aviato.plugin.v1.Caller
-	72,  // 39: aviato.plugin.v1.WriteFieldRequest.value:type_name -> google.protobuf.Value
-	71,  // 40: aviato.plugin.v1.WriteFieldRequest.record:type_name -> google.protobuf.Struct
-	71,  // 41: aviato.plugin.v1.WriteFieldResponse.patch:type_name -> google.protobuf.Struct
-	4,   // 42: aviato.plugin.v1.ResolveSegmentRequest.caller:type_name -> aviato.plugin.v1.Caller
-	71,  // 43: aviato.plugin.v1.ResolveSegmentResponse.filter:type_name -> google.protobuf.Struct
-	35,  // 44: aviato.plugin.v1.ResolveSegmentResponse.record_ids:type_name -> aviato.plugin.v1.RecordIds
-	4,   // 45: aviato.plugin.v1.SearchRequest.caller:type_name -> aviato.plugin.v1.Caller
-	71,  // 46: aviato.plugin.v1.SearchResponse.filter:type_name -> google.protobuf.Struct
-	4,   // 47: aviato.plugin.v1.ComputeChartRequest.caller:type_name -> aviato.plugin.v1.Caller
-	71,  // 48: aviato.plugin.v1.ComputeChartRequest.filter:type_name -> google.protobuf.Struct
-	71,  // 49: aviato.plugin.v1.ComputeChartResponse.vega_lite:type_name -> google.protobuf.Struct
-	4,   // 50: aviato.plugin.v1.RunHookRequest.caller:type_name -> aviato.plugin.v1.Caller
-	1,   // 51: aviato.plugin.v1.RunHookRequest.timing:type_name -> aviato.plugin.v1.HookTiming
-	2,   // 52: aviato.plugin.v1.RunHookRequest.operation:type_name -> aviato.plugin.v1.HookOperation
-	71,  // 53: aviato.plugin.v1.RunHookRequest.values:type_name -> google.protobuf.Struct
-	71,  // 54: aviato.plugin.v1.RunHookResponse.values:type_name -> google.protobuf.Struct
-	71,  // 55: aviato.plugin.v1.ListRequest.filter:type_name -> google.protobuf.Struct
-	71,  // 56: aviato.plugin.v1.ListResponse.records:type_name -> google.protobuf.Struct
-	71,  // 57: aviato.plugin.v1.GetResponse.record:type_name -> google.protobuf.Struct
-	71,  // 58: aviato.plugin.v1.CreateRequest.values:type_name -> google.protobuf.Struct
-	71,  // 59: aviato.plugin.v1.UpdateRequest.values:type_name -> google.protobuf.Struct
-	71,  // 60: aviato.plugin.v1.CreateResponse.record:type_name -> google.protobuf.Struct
-	71,  // 61: aviato.plugin.v1.UpdateResponse.record:type_name -> google.protobuf.Struct
-	54,  // 62: aviato.plugin.v1.DescribeCollectionsResponse.collections:type_name -> aviato.plugin.v1.CustomCollection
-	55,  // 63: aviato.plugin.v1.CustomCollection.fields:type_name -> aviato.plugin.v1.CustomField
-	16,  // 64: aviato.plugin.v1.CustomCollection.relations:type_name -> aviato.plugin.v1.RelationHint
-	56,  // 65: aviato.plugin.v1.CustomCollection.capabilities:type_name -> aviato.plugin.v1.CollectionCapabilities
-	3,   // 66: aviato.plugin.v1.CustomCollection.strategy:type_name -> aviato.plugin.v1.DatasourceStrategy
-	4,   // 67: aviato.plugin.v1.DatasourceServiceListRequest.caller:type_name -> aviato.plugin.v1.Caller
-	71,  // 68: aviato.plugin.v1.DatasourceServiceListRequest.filter:type_name -> google.protobuf.Struct
-	71,  // 69: aviato.plugin.v1.DatasourceServiceListResponse.records:type_name -> google.protobuf.Struct
-	4,   // 70: aviato.plugin.v1.DatasourceServiceGetRequest.caller:type_name -> aviato.plugin.v1.Caller
-	71,  // 71: aviato.plugin.v1.DatasourceServiceGetResponse.record:type_name -> google.protobuf.Struct
-	4,   // 72: aviato.plugin.v1.DatasourceServiceCreateRequest.caller:type_name -> aviato.plugin.v1.Caller
-	71,  // 73: aviato.plugin.v1.DatasourceServiceCreateRequest.values:type_name -> google.protobuf.Struct
-	71,  // 74: aviato.plugin.v1.DatasourceServiceCreateResponse.record:type_name -> google.protobuf.Struct
-	4,   // 75: aviato.plugin.v1.DatasourceServiceUpdateRequest.caller:type_name -> aviato.plugin.v1.Caller
-	71,  // 76: aviato.plugin.v1.DatasourceServiceUpdateRequest.values:type_name -> google.protobuf.Struct
-	71,  // 77: aviato.plugin.v1.DatasourceServiceUpdateResponse.record:type_name -> google.protobuf.Struct
-	4,   // 78: aviato.plugin.v1.DatasourceServiceDeleteRequest.caller:type_name -> aviato.plugin.v1.Caller
-	71,  // 79: aviato.plugin.v1.ListChangesResponse.records:type_name -> google.protobuf.Struct
-	5,   // 80: aviato.plugin.v1.PluginService.GetManifest:input_type -> aviato.plugin.v1.GetManifestRequest
-	18,  // 81: aviato.plugin.v1.PluginService.ResolveForm:input_type -> aviato.plugin.v1.ResolveFormRequest
-	20,  // 82: aviato.plugin.v1.PluginService.ExecuteAction:input_type -> aviato.plugin.v1.ExecuteActionRequest
-	29,  // 83: aviato.plugin.v1.PluginService.ComputeFields:input_type -> aviato.plugin.v1.ComputeFieldsRequest
-	31,  // 84: aviato.plugin.v1.PluginService.WriteField:input_type -> aviato.plugin.v1.WriteFieldRequest
-	33,  // 85: aviato.plugin.v1.PluginService.ResolveSegment:input_type -> aviato.plugin.v1.ResolveSegmentRequest
-	40,  // 86: aviato.plugin.v1.PluginService.RunHook:input_type -> aviato.plugin.v1.RunHookRequest
-	36,  // 87: aviato.plugin.v1.PluginService.Search:input_type -> aviato.plugin.v1.SearchRequest
-	38,  // 88: aviato.plugin.v1.PluginService.ComputeChart:input_type -> aviato.plugin.v1.ComputeChartRequest
-	42,  // 89: aviato.plugin.v1.DataService.List:input_type -> aviato.plugin.v1.ListRequest
-	44,  // 90: aviato.plugin.v1.DataService.Get:input_type -> aviato.plugin.v1.GetRequest
-	46,  // 91: aviato.plugin.v1.DataService.Create:input_type -> aviato.plugin.v1.CreateRequest
-	47,  // 92: aviato.plugin.v1.DataService.Update:input_type -> aviato.plugin.v1.UpdateRequest
-	48,  // 93: aviato.plugin.v1.DataService.Delete:input_type -> aviato.plugin.v1.DeleteRequest
-	52,  // 94: aviato.plugin.v1.DatasourceService.DescribeCollections:input_type -> aviato.plugin.v1.DescribeCollectionsRequest
-	57,  // 95: aviato.plugin.v1.DatasourceService.List:input_type -> aviato.plugin.v1.DatasourceServiceListRequest
-	59,  // 96: aviato.plugin.v1.DatasourceService.Get:input_type -> aviato.plugin.v1.DatasourceServiceGetRequest
-	61,  // 97: aviato.plugin.v1.DatasourceService.Create:input_type -> aviato.plugin.v1.DatasourceServiceCreateRequest
-	63,  // 98: aviato.plugin.v1.DatasourceService.Update:input_type -> aviato.plugin.v1.DatasourceServiceUpdateRequest
-	65,  // 99: aviato.plugin.v1.DatasourceService.Delete:input_type -> aviato.plugin.v1.DatasourceServiceDeleteRequest
-	67,  // 100: aviato.plugin.v1.DatasourceService.ListChanges:input_type -> aviato.plugin.v1.ListChangesRequest
-	6,   // 101: aviato.plugin.v1.PluginService.GetManifest:output_type -> aviato.plugin.v1.GetManifestResponse
-	19,  // 102: aviato.plugin.v1.PluginService.ResolveForm:output_type -> aviato.plugin.v1.ResolveFormResponse
-	21,  // 103: aviato.plugin.v1.PluginService.ExecuteAction:output_type -> aviato.plugin.v1.ExecuteActionResponse
-	30,  // 104: aviato.plugin.v1.PluginService.ComputeFields:output_type -> aviato.plugin.v1.ComputeFieldsResponse
-	32,  // 105: aviato.plugin.v1.PluginService.WriteField:output_type -> aviato.plugin.v1.WriteFieldResponse
-	34,  // 106: aviato.plugin.v1.PluginService.ResolveSegment:output_type -> aviato.plugin.v1.ResolveSegmentResponse
-	41,  // 107: aviato.plugin.v1.PluginService.RunHook:output_type -> aviato.plugin.v1.RunHookResponse
-	37,  // 108: aviato.plugin.v1.PluginService.Search:output_type -> aviato.plugin.v1.SearchResponse
-	39,  // 109: aviato.plugin.v1.PluginService.ComputeChart:output_type -> aviato.plugin.v1.ComputeChartResponse
-	43,  // 110: aviato.plugin.v1.DataService.List:output_type -> aviato.plugin.v1.ListResponse
-	45,  // 111: aviato.plugin.v1.DataService.Get:output_type -> aviato.plugin.v1.GetResponse
-	49,  // 112: aviato.plugin.v1.DataService.Create:output_type -> aviato.plugin.v1.CreateResponse
-	50,  // 113: aviato.plugin.v1.DataService.Update:output_type -> aviato.plugin.v1.UpdateResponse
-	51,  // 114: aviato.plugin.v1.DataService.Delete:output_type -> aviato.plugin.v1.DeleteResponse
-	53,  // 115: aviato.plugin.v1.DatasourceService.DescribeCollections:output_type -> aviato.plugin.v1.DescribeCollectionsResponse
-	58,  // 116: aviato.plugin.v1.DatasourceService.List:output_type -> aviato.plugin.v1.DatasourceServiceListResponse
-	60,  // 117: aviato.plugin.v1.DatasourceService.Get:output_type -> aviato.plugin.v1.DatasourceServiceGetResponse
-	62,  // 118: aviato.plugin.v1.DatasourceService.Create:output_type -> aviato.plugin.v1.DatasourceServiceCreateResponse
-	64,  // 119: aviato.plugin.v1.DatasourceService.Update:output_type -> aviato.plugin.v1.DatasourceServiceUpdateResponse
-	66,  // 120: aviato.plugin.v1.DatasourceService.Delete:output_type -> aviato.plugin.v1.DatasourceServiceDeleteResponse
-	68,  // 121: aviato.plugin.v1.DatasourceService.ListChanges:output_type -> aviato.plugin.v1.ListChangesResponse
-	101, // [101:122] is the sub-list for method output_type
-	80,  // [80:101] is the sub-list for method input_type
-	80,  // [80:80] is the sub-list for extension type_name
-	80,  // [80:80] is the sub-list for extension extendee
-	0,   // [0:80] is the sub-list for field type_name
+	10,  // 1: aviato.plugin.v1.Manifest.actions:type_name -> aviato.plugin.v1.ActionDefinition
+	11,  // 2: aviato.plugin.v1.Manifest.computed_fields:type_name -> aviato.plugin.v1.ComputedFieldDefinition
+	12,  // 3: aviato.plugin.v1.Manifest.hooks:type_name -> aviato.plugin.v1.HookDefinition
+	13,  // 4: aviato.plugin.v1.Manifest.segments:type_name -> aviato.plugin.v1.SegmentDefinition
+	14,  // 5: aviato.plugin.v1.Manifest.searches:type_name -> aviato.plugin.v1.SearchDefinition
+	15,  // 6: aviato.plugin.v1.Manifest.charts:type_name -> aviato.plugin.v1.ChartDefinition
+	16,  // 7: aviato.plugin.v1.Manifest.write_overrides:type_name -> aviato.plugin.v1.WriteOverrideDefinition
+	17,  // 8: aviato.plugin.v1.Manifest.relation_hints:type_name -> aviato.plugin.v1.RelationHint
+	9,   // 9: aviato.plugin.v1.Manifest.summaries:type_name -> aviato.plugin.v1.SummaryDefinition
+	70,  // 10: aviato.plugin.v1.Manifest.widgets:type_name -> aviato.plugin.v1.WidgetDefinition
+	8,   // 11: aviato.plugin.v1.Manifest.layouts:type_name -> aviato.plugin.v1.LayoutDefinition
+	72,  // 12: aviato.plugin.v1.LayoutDefinition.layout:type_name -> google.protobuf.Struct
+	72,  // 13: aviato.plugin.v1.SummaryDefinition.document:type_name -> google.protobuf.Struct
+	0,   // 14: aviato.plugin.v1.ActionDefinition.scope:type_name -> aviato.plugin.v1.ActionScope
+	72,  // 15: aviato.plugin.v1.ActionDefinition.form_schema:type_name -> google.protobuf.Struct
+	72,  // 16: aviato.plugin.v1.ActionDefinition.form_ui_schema:type_name -> google.protobuf.Struct
+	1,   // 17: aviato.plugin.v1.HookDefinition.timing:type_name -> aviato.plugin.v1.HookTiming
+	2,   // 18: aviato.plugin.v1.HookDefinition.operation:type_name -> aviato.plugin.v1.HookOperation
+	72,  // 19: aviato.plugin.v1.ActionTarget.filter:type_name -> google.protobuf.Struct
+	4,   // 20: aviato.plugin.v1.ResolveFormRequest.caller:type_name -> aviato.plugin.v1.Caller
+	18,  // 21: aviato.plugin.v1.ResolveFormRequest.target:type_name -> aviato.plugin.v1.ActionTarget
+	72,  // 22: aviato.plugin.v1.ResolveFormRequest.values:type_name -> google.protobuf.Struct
+	72,  // 23: aviato.plugin.v1.ResolveFormResponse.form_schema:type_name -> google.protobuf.Struct
+	72,  // 24: aviato.plugin.v1.ResolveFormResponse.form_ui_schema:type_name -> google.protobuf.Struct
+	72,  // 25: aviato.plugin.v1.ResolveFormResponse.values:type_name -> google.protobuf.Struct
+	4,   // 26: aviato.plugin.v1.ExecuteActionRequest.caller:type_name -> aviato.plugin.v1.Caller
+	18,  // 27: aviato.plugin.v1.ExecuteActionRequest.target:type_name -> aviato.plugin.v1.ActionTarget
+	72,  // 28: aviato.plugin.v1.ExecuteActionRequest.values:type_name -> google.protobuf.Struct
+	23,  // 29: aviato.plugin.v1.ExecuteActionResponse.result:type_name -> aviato.plugin.v1.ActionResult
+	24,  // 30: aviato.plugin.v1.ActionResult.success:type_name -> aviato.plugin.v1.SuccessResult
+	25,  // 31: aviato.plugin.v1.ActionResult.error:type_name -> aviato.plugin.v1.ErrorResult
+	26,  // 32: aviato.plugin.v1.ActionResult.html:type_name -> aviato.plugin.v1.HtmlResult
+	27,  // 33: aviato.plugin.v1.ActionResult.file:type_name -> aviato.plugin.v1.FileResult
+	28,  // 34: aviato.plugin.v1.ActionResult.redirect:type_name -> aviato.plugin.v1.RedirectResult
+	29,  // 35: aviato.plugin.v1.ActionResult.webhook:type_name -> aviato.plugin.v1.WebhookResult
+	71,  // 36: aviato.plugin.v1.WebhookResult.headers:type_name -> aviato.plugin.v1.WebhookResult.HeadersEntry
+	4,   // 37: aviato.plugin.v1.ComputeFieldsRequest.caller:type_name -> aviato.plugin.v1.Caller
+	72,  // 38: aviato.plugin.v1.ComputeFieldsRequest.records:type_name -> google.protobuf.Struct
+	72,  // 39: aviato.plugin.v1.ComputeFieldsResponse.values:type_name -> google.protobuf.Struct
+	4,   // 40: aviato.plugin.v1.WriteFieldRequest.caller:type_name -> aviato.plugin.v1.Caller
+	73,  // 41: aviato.plugin.v1.WriteFieldRequest.value:type_name -> google.protobuf.Value
+	72,  // 42: aviato.plugin.v1.WriteFieldRequest.record:type_name -> google.protobuf.Struct
+	72,  // 43: aviato.plugin.v1.WriteFieldResponse.patch:type_name -> google.protobuf.Struct
+	4,   // 44: aviato.plugin.v1.ResolveSegmentRequest.caller:type_name -> aviato.plugin.v1.Caller
+	72,  // 45: aviato.plugin.v1.ResolveSegmentResponse.filter:type_name -> google.protobuf.Struct
+	36,  // 46: aviato.plugin.v1.ResolveSegmentResponse.record_ids:type_name -> aviato.plugin.v1.RecordIds
+	4,   // 47: aviato.plugin.v1.SearchRequest.caller:type_name -> aviato.plugin.v1.Caller
+	72,  // 48: aviato.plugin.v1.SearchResponse.filter:type_name -> google.protobuf.Struct
+	4,   // 49: aviato.plugin.v1.ComputeChartRequest.caller:type_name -> aviato.plugin.v1.Caller
+	72,  // 50: aviato.plugin.v1.ComputeChartRequest.filter:type_name -> google.protobuf.Struct
+	72,  // 51: aviato.plugin.v1.ComputeChartResponse.vega_lite:type_name -> google.protobuf.Struct
+	4,   // 52: aviato.plugin.v1.RunHookRequest.caller:type_name -> aviato.plugin.v1.Caller
+	1,   // 53: aviato.plugin.v1.RunHookRequest.timing:type_name -> aviato.plugin.v1.HookTiming
+	2,   // 54: aviato.plugin.v1.RunHookRequest.operation:type_name -> aviato.plugin.v1.HookOperation
+	72,  // 55: aviato.plugin.v1.RunHookRequest.values:type_name -> google.protobuf.Struct
+	72,  // 56: aviato.plugin.v1.RunHookResponse.values:type_name -> google.protobuf.Struct
+	72,  // 57: aviato.plugin.v1.ListRequest.filter:type_name -> google.protobuf.Struct
+	72,  // 58: aviato.plugin.v1.ListResponse.records:type_name -> google.protobuf.Struct
+	72,  // 59: aviato.plugin.v1.GetResponse.record:type_name -> google.protobuf.Struct
+	72,  // 60: aviato.plugin.v1.CreateRequest.values:type_name -> google.protobuf.Struct
+	72,  // 61: aviato.plugin.v1.UpdateRequest.values:type_name -> google.protobuf.Struct
+	72,  // 62: aviato.plugin.v1.CreateResponse.record:type_name -> google.protobuf.Struct
+	72,  // 63: aviato.plugin.v1.UpdateResponse.record:type_name -> google.protobuf.Struct
+	55,  // 64: aviato.plugin.v1.DescribeCollectionsResponse.collections:type_name -> aviato.plugin.v1.CustomCollection
+	56,  // 65: aviato.plugin.v1.CustomCollection.fields:type_name -> aviato.plugin.v1.CustomField
+	17,  // 66: aviato.plugin.v1.CustomCollection.relations:type_name -> aviato.plugin.v1.RelationHint
+	57,  // 67: aviato.plugin.v1.CustomCollection.capabilities:type_name -> aviato.plugin.v1.CollectionCapabilities
+	3,   // 68: aviato.plugin.v1.CustomCollection.strategy:type_name -> aviato.plugin.v1.DatasourceStrategy
+	4,   // 69: aviato.plugin.v1.DatasourceServiceListRequest.caller:type_name -> aviato.plugin.v1.Caller
+	72,  // 70: aviato.plugin.v1.DatasourceServiceListRequest.filter:type_name -> google.protobuf.Struct
+	72,  // 71: aviato.plugin.v1.DatasourceServiceListResponse.records:type_name -> google.protobuf.Struct
+	4,   // 72: aviato.plugin.v1.DatasourceServiceGetRequest.caller:type_name -> aviato.plugin.v1.Caller
+	72,  // 73: aviato.plugin.v1.DatasourceServiceGetResponse.record:type_name -> google.protobuf.Struct
+	4,   // 74: aviato.plugin.v1.DatasourceServiceCreateRequest.caller:type_name -> aviato.plugin.v1.Caller
+	72,  // 75: aviato.plugin.v1.DatasourceServiceCreateRequest.values:type_name -> google.protobuf.Struct
+	72,  // 76: aviato.plugin.v1.DatasourceServiceCreateResponse.record:type_name -> google.protobuf.Struct
+	4,   // 77: aviato.plugin.v1.DatasourceServiceUpdateRequest.caller:type_name -> aviato.plugin.v1.Caller
+	72,  // 78: aviato.plugin.v1.DatasourceServiceUpdateRequest.values:type_name -> google.protobuf.Struct
+	72,  // 79: aviato.plugin.v1.DatasourceServiceUpdateResponse.record:type_name -> google.protobuf.Struct
+	4,   // 80: aviato.plugin.v1.DatasourceServiceDeleteRequest.caller:type_name -> aviato.plugin.v1.Caller
+	72,  // 81: aviato.plugin.v1.ListChangesResponse.records:type_name -> google.protobuf.Struct
+	5,   // 82: aviato.plugin.v1.PluginService.GetManifest:input_type -> aviato.plugin.v1.GetManifestRequest
+	19,  // 83: aviato.plugin.v1.PluginService.ResolveForm:input_type -> aviato.plugin.v1.ResolveFormRequest
+	21,  // 84: aviato.plugin.v1.PluginService.ExecuteAction:input_type -> aviato.plugin.v1.ExecuteActionRequest
+	30,  // 85: aviato.plugin.v1.PluginService.ComputeFields:input_type -> aviato.plugin.v1.ComputeFieldsRequest
+	32,  // 86: aviato.plugin.v1.PluginService.WriteField:input_type -> aviato.plugin.v1.WriteFieldRequest
+	34,  // 87: aviato.plugin.v1.PluginService.ResolveSegment:input_type -> aviato.plugin.v1.ResolveSegmentRequest
+	41,  // 88: aviato.plugin.v1.PluginService.RunHook:input_type -> aviato.plugin.v1.RunHookRequest
+	37,  // 89: aviato.plugin.v1.PluginService.Search:input_type -> aviato.plugin.v1.SearchRequest
+	39,  // 90: aviato.plugin.v1.PluginService.ComputeChart:input_type -> aviato.plugin.v1.ComputeChartRequest
+	43,  // 91: aviato.plugin.v1.DataService.List:input_type -> aviato.plugin.v1.ListRequest
+	45,  // 92: aviato.plugin.v1.DataService.Get:input_type -> aviato.plugin.v1.GetRequest
+	47,  // 93: aviato.plugin.v1.DataService.Create:input_type -> aviato.plugin.v1.CreateRequest
+	48,  // 94: aviato.plugin.v1.DataService.Update:input_type -> aviato.plugin.v1.UpdateRequest
+	49,  // 95: aviato.plugin.v1.DataService.Delete:input_type -> aviato.plugin.v1.DeleteRequest
+	53,  // 96: aviato.plugin.v1.DatasourceService.DescribeCollections:input_type -> aviato.plugin.v1.DescribeCollectionsRequest
+	58,  // 97: aviato.plugin.v1.DatasourceService.List:input_type -> aviato.plugin.v1.DatasourceServiceListRequest
+	60,  // 98: aviato.plugin.v1.DatasourceService.Get:input_type -> aviato.plugin.v1.DatasourceServiceGetRequest
+	62,  // 99: aviato.plugin.v1.DatasourceService.Create:input_type -> aviato.plugin.v1.DatasourceServiceCreateRequest
+	64,  // 100: aviato.plugin.v1.DatasourceService.Update:input_type -> aviato.plugin.v1.DatasourceServiceUpdateRequest
+	66,  // 101: aviato.plugin.v1.DatasourceService.Delete:input_type -> aviato.plugin.v1.DatasourceServiceDeleteRequest
+	68,  // 102: aviato.plugin.v1.DatasourceService.ListChanges:input_type -> aviato.plugin.v1.ListChangesRequest
+	6,   // 103: aviato.plugin.v1.PluginService.GetManifest:output_type -> aviato.plugin.v1.GetManifestResponse
+	20,  // 104: aviato.plugin.v1.PluginService.ResolveForm:output_type -> aviato.plugin.v1.ResolveFormResponse
+	22,  // 105: aviato.plugin.v1.PluginService.ExecuteAction:output_type -> aviato.plugin.v1.ExecuteActionResponse
+	31,  // 106: aviato.plugin.v1.PluginService.ComputeFields:output_type -> aviato.plugin.v1.ComputeFieldsResponse
+	33,  // 107: aviato.plugin.v1.PluginService.WriteField:output_type -> aviato.plugin.v1.WriteFieldResponse
+	35,  // 108: aviato.plugin.v1.PluginService.ResolveSegment:output_type -> aviato.plugin.v1.ResolveSegmentResponse
+	42,  // 109: aviato.plugin.v1.PluginService.RunHook:output_type -> aviato.plugin.v1.RunHookResponse
+	38,  // 110: aviato.plugin.v1.PluginService.Search:output_type -> aviato.plugin.v1.SearchResponse
+	40,  // 111: aviato.plugin.v1.PluginService.ComputeChart:output_type -> aviato.plugin.v1.ComputeChartResponse
+	44,  // 112: aviato.plugin.v1.DataService.List:output_type -> aviato.plugin.v1.ListResponse
+	46,  // 113: aviato.plugin.v1.DataService.Get:output_type -> aviato.plugin.v1.GetResponse
+	50,  // 114: aviato.plugin.v1.DataService.Create:output_type -> aviato.plugin.v1.CreateResponse
+	51,  // 115: aviato.plugin.v1.DataService.Update:output_type -> aviato.plugin.v1.UpdateResponse
+	52,  // 116: aviato.plugin.v1.DataService.Delete:output_type -> aviato.plugin.v1.DeleteResponse
+	54,  // 117: aviato.plugin.v1.DatasourceService.DescribeCollections:output_type -> aviato.plugin.v1.DescribeCollectionsResponse
+	59,  // 118: aviato.plugin.v1.DatasourceService.List:output_type -> aviato.plugin.v1.DatasourceServiceListResponse
+	61,  // 119: aviato.plugin.v1.DatasourceService.Get:output_type -> aviato.plugin.v1.DatasourceServiceGetResponse
+	63,  // 120: aviato.plugin.v1.DatasourceService.Create:output_type -> aviato.plugin.v1.DatasourceServiceCreateResponse
+	65,  // 121: aviato.plugin.v1.DatasourceService.Update:output_type -> aviato.plugin.v1.DatasourceServiceUpdateResponse
+	67,  // 122: aviato.plugin.v1.DatasourceService.Delete:output_type -> aviato.plugin.v1.DatasourceServiceDeleteResponse
+	69,  // 123: aviato.plugin.v1.DatasourceService.ListChanges:output_type -> aviato.plugin.v1.ListChangesResponse
+	103, // [103:124] is the sub-list for method output_type
+	82,  // [82:103] is the sub-list for method input_type
+	82,  // [82:82] is the sub-list for extension type_name
+	82,  // [82:82] is the sub-list for extension extendee
+	0,   // [0:82] is the sub-list for field type_name
 }
 
 func init() { file_aviato_plugin_v1_plugin_proto_init() }
@@ -5117,7 +5190,7 @@ func file_aviato_plugin_v1_plugin_proto_init() {
 	if File_aviato_plugin_v1_plugin_proto != nil {
 		return
 	}
-	file_aviato_plugin_v1_plugin_proto_msgTypes[18].OneofWrappers = []any{
+	file_aviato_plugin_v1_plugin_proto_msgTypes[19].OneofWrappers = []any{
 		(*ActionResult_Success)(nil),
 		(*ActionResult_Error)(nil),
 		(*ActionResult_Html)(nil),
@@ -5125,7 +5198,7 @@ func file_aviato_plugin_v1_plugin_proto_init() {
 		(*ActionResult_Redirect)(nil),
 		(*ActionResult_Webhook)(nil),
 	}
-	file_aviato_plugin_v1_plugin_proto_msgTypes[30].OneofWrappers = []any{
+	file_aviato_plugin_v1_plugin_proto_msgTypes[31].OneofWrappers = []any{
 		(*ResolveSegmentResponse_Filter)(nil),
 		(*ResolveSegmentResponse_RecordIds)(nil),
 	}
@@ -5135,7 +5208,7 @@ func file_aviato_plugin_v1_plugin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_aviato_plugin_v1_plugin_proto_rawDesc), len(file_aviato_plugin_v1_plugin_proto_rawDesc)),
 			NumEnums:      4,
-			NumMessages:   67,
+			NumMessages:   68,
 			NumExtensions: 0,
 			NumServices:   3,
 		},

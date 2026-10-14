@@ -9,7 +9,7 @@ import (
 )
 
 // ErrNotFound is wrapped by the errors returned for unknown actions, fields, segments, charts,
-// searches and write overrides (reported to the agent as Connect code not_found).
+// searches and write overrides (reported to the connector as Connect code not_found).
 var ErrNotFound = errors.New("not found")
 
 func notFound(format string, args ...any) error {

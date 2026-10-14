@@ -4,14 +4,14 @@ import (
 	pluginv1 "github.com/getaviato/aviato-go/pluginv1"
 )
 
-// Record is a record as exchanged with the agent: column names to JSON values.
+// Record is a record as exchanged with the connector: column names to JSON values.
 type Record = map[string]any
 
 // Caller describes who is calling the plugin and on what. It is sent with every plugin call.
 type Caller struct {
 	UserID string
 	Name   string
-	// ActorType is human, agent or api_key.
+	// ActorType is human, connector or api_key.
 	ActorType string
 	// Role is admin, editor, viewer or a custom role name.
 	Role           string
@@ -21,7 +21,7 @@ type Caller struct {
 	RequestID      string
 	// InvocationToken authenticates DataService calls made while handling this call.
 	InvocationToken string
-	// DataURL is the base URL of the agent's DataService.
+	// DataURL is the base URL of the connector's DataService.
 	DataURL string
 }
 
@@ -125,7 +125,7 @@ const (
 	HasOne    RelationKind = "hasOne"
 )
 
-// RelationHint declares a relation the agent cannot introspect from the database (for example
+// RelationHint declares a relation the connector cannot introspect from the database (for example
 // when the schema has no foreign key constraints). ForeignKey always holds the referencing
 // columns and TargetKey the referenced ones, whichever side the relation is declared on: on
 // BelongsTo the foreign key is local, otherwise it is on the target.

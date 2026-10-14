@@ -20,14 +20,14 @@ import (
 	pluginv1 "github.com/getaviato/aviato-go/pluginv1"
 )
 
-// DatasourceStrategy is how the agent serves a custom collection.
+// DatasourceStrategy is how the connector serves a custom collection.
 type DatasourceStrategy int
 
 const (
 	// TranslationStrategy (the default) forwards every read and write to the plugin when it
 	// happens.
 	TranslationStrategy DatasourceStrategy = iota + 1
-	// ReplicationStrategy makes the agent copy the collection with [Datasource.ListChanges] and
+	// ReplicationStrategy makes the connector copy the collection with [Datasource.ListChanges] and
 	// serve reads from its copy; writes still go to the plugin.
 	ReplicationStrategy
 )
@@ -51,7 +51,7 @@ type CustomField struct {
 	HasDefault bool
 }
 
-// Capabilities is what a collection's List handler does itself. The agent evaluates everything
+// Capabilities is what a collection's List handler does itself. The connector evaluates everything
 // else in memory, over at most 2,000 records, and always checks the records you return against
 // the caller's permissions.
 type Capabilities struct {
@@ -87,7 +87,7 @@ type SortField struct {
 	Desc  bool
 }
 
-// DatasourceQuery is what the agent asks a List handler for.
+// DatasourceQuery is what the connector asks a List handler for.
 type DatasourceQuery struct {
 	// Filter in MongoDB query syntax, using only the declared operators (row scopes included).
 	// Nil when there is none.
@@ -117,7 +117,7 @@ type DatasourceChanges struct {
 	// DeletedIDs are the ids of the records deleted since the cursor (composite keys as "a|b").
 	DeletedIDs []string
 	NextCursor string
-	// HasMore is set when more changes are waiting: the agent calls again right away.
+	// HasMore is set when more changes are waiting: the connector calls again right away.
 	HasMore bool
 }
 
@@ -125,7 +125,7 @@ type DatasourceChanges struct {
 type DatasourceContext struct {
 	// Collection is the name of the custom collection, as you declared it.
 	Collection string
-	// Caller is who the agent acts for; nil for the agent's own calls (replication).
+	// Caller is who the connector acts for; nil for the connector's own calls (replication).
 	Caller *Caller
 }
 
@@ -145,7 +145,7 @@ type (
 )
 
 // Datasource serves collections from your code: an internal API, a SaaS (Stripe, HubSpot), a
-// file. The agent applies roles, row scopes, field masking and the audit trail as for its
+// file. The connector applies roles, row scopes, field masking and the audit trail as for its
 // databases. Register it with [Plugin.Datasource].
 type Datasource struct {
 	Collections []CustomCollection
@@ -250,7 +250,7 @@ func (p *Plugin) Datasource(datasource Datasource) *Plugin {
 	return p
 }
 
-// DescribeCollections describes the custom collections, as sent to the agent.
+// DescribeCollections describes the custom collections, as sent to the connector.
 func (p *Plugin) DescribeCollections() *pluginv1.DescribeCollectionsResponse {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
@@ -303,7 +303,7 @@ func primaryKey(collection CustomCollection) []string {
 	return collection.PrimaryKey
 }
 
-// encodeID encodes the primary key of record as the agent does ("a|b" for composite keys).
+// encodeID encodes the primary key of record as the connector does ("a|b" for composite keys).
 func encodeID(record Record, key []string) string {
 	parts := make([]string, len(key))
 	for index, field := range key {
@@ -454,7 +454,7 @@ func (p *Plugin) dispatchListChanges(ctx context.Context, collection, cursor str
 	return changes, nil
 }
 
-// ReplicaRefresh is the agent's answer to [Plugin.RefreshReplica].
+// ReplicaRefresh is the connector's answer to [Plugin.RefreshReplica].
 type ReplicaRefresh struct {
 	Collection string `json:"collection"`
 	Upserted   int    `json:"upserted"`
@@ -462,17 +462,19 @@ type ReplicaRefresh struct {
 	Cursor     string `json:"cursor"`
 }
 
-// RefreshReplica asks the agent to pull the changes of a replicated collection now, for
-// example from a webhook of the source. dataURL is the agent's Data API
-// ([Caller.DataURL], <agent URL>/plugin-data). The request is signed with the plugin secret.
+// RefreshReplica asks the connector to pull the changes of a replicated collection now, for
+// example from a webhook of the source. dataURL is the connector's Data API
+// ([Caller.DataURL], <connector URL>/plugin-data). The request is signed with the plugin secret.
 func (p *Plugin) RefreshReplica(ctx context.Context, collection, dataURL string) (ReplicaRefresh, error) {
 	body := []byte("{}")
-	endpoint := strings.TrimRight(dataURL, "/") + "/replicas/" + url.PathEscape(collection) + "/refresh"
+	path := "replicas/" + url.PathEscape(collection) + "/refresh"
+	endpoint := strings.TrimRight(dataURL, "/") + "/" + path
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
 	if err != nil {
 		return ReplicaRefresh{}, fmt.Errorf("aviato: refreshing the replica of %s: %w", collection, err)
 	}
-	id := "msg_" + randomID()
+	// Bound to this endpoint, so the connector cannot be handed this request as another one.
+	id := BoundMessageID(randomID(), http.MethodPost, path)
 	timestamp := time.Now()
 	signature, err := p.webhook.Sign(id, timestamp, body)
 	if err != nil {

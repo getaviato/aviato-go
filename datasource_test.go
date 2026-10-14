@@ -286,15 +286,15 @@ func TestRefreshReplicaSignsTheRequest(t *testing.T) {
 		verified bool
 	}
 	var calls []received
-	agent := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	connector := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		calls = append(calls, received{path: r.URL.Path, verified: webhook.Verify(body, r.Header) == nil})
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{"collection": "rates", "upserted": 1, "deleted": 0, "cursor": "1"})
 	}))
-	t.Cleanup(agent.Close)
+	t.Cleanup(connector.Close)
 
-	result, err := plugin.RefreshReplica(context.Background(), "rates", agent.URL+"/plugin-data/")
+	result, err := plugin.RefreshReplica(context.Background(), "rates", connector.URL+"/plugin-data/")
 	require.NoError(t, err)
 	assert.Equal(t, aviato.ReplicaRefresh{Collection: "rates", Upserted: 1, Cursor: "1"}, result)
 	assert.Equal(t, []received{{path: "/plugin-data/replicas/rates/refresh", verified: true}}, calls)

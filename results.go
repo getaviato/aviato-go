@@ -30,7 +30,7 @@ type HTMLResult struct {
 }
 
 // FileResult is downloaded by the user. The SDK keeps the content for five minutes and serves
-// it once, to the agent, from GET <basePath>/files/{ref}.
+// it once, to the connector, from GET <basePath>/files/{ref}.
 type FileResult struct {
 	Name     string
 	MimeType string

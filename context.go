@@ -11,7 +11,7 @@ type Invocation struct {
 	Caller Caller
 	// Collection concerned by the call (empty for charts not bound to one).
 	Collection string
-	// Data reads and writes records through the agent with the caller's permissions.
+	// Data reads and writes records through the connector with the caller's permissions.
 	Data *DataClient
 }
 
@@ -52,7 +52,7 @@ type RecordsOptions struct {
 	Limit uint32
 }
 
-// Records reads the records the action runs on through the agent: the selected records for
+// Records reads the records the action runs on through the connector: the selected records for
 // single and bulk actions, the records matching the current filter for global actions.
 func (a *ActionContext) Records(ctx context.Context, options ...RecordsOptions) ([]Record, error) {
 	var opts RecordsOptions
@@ -157,7 +157,7 @@ type SegmentResult struct {
 	byIDs  bool
 }
 
-// SegmentFilter resolves a segment to a filter the agent applies (preferred).
+// SegmentFilter resolves a segment to a filter the connector applies (preferred).
 func SegmentFilter(filter map[string]any) SegmentResult {
 	return SegmentResult{filter: filter}
 }

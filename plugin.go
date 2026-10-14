@@ -1,9 +1,9 @@
-// Package aviato extends an Aviato agent with custom actions, computed fields, hooks, segments,
+// Package aviato extends an Aviato connector with custom actions, computed fields, hooks, segments,
 // search, write overrides, charts and custom datasources written in Go.
 //
-// The agent calls the plugin over HTTP (ConnectRPC, JSON encoding) and signs every request
+// The connector calls the plugin over HTTP (ConnectRPC, JSON encoding) and signs every request
 // with the Standard Webhooks scheme; mount [Plugin.Handler] in your application under
-// [Options.BasePath]. Plugin code reads and writes records through the agent's Data API
+// [Options.BasePath]. Plugin code reads and writes records through the connector's Data API
 // ([DataClient]) with the caller's permissions, never behind its back.
 package aviato
 
@@ -24,20 +24,20 @@ import (
 const (
 	// ProtocolVersion is the plugin protocol version this SDK speaks.
 	ProtocolVersion = 1
-	// SDKName is reported to the agent in the manifest.
+	// SDKName is reported to the connector in the manifest.
 	SDKName = "github.com/getaviato/aviato-go"
-	// SDKVersion is reported to the agent in the manifest.
-	SDKVersion = "0.3.0"
+	// SDKVersion is reported to the connector in the manifest.
+	SDKVersion = "0.6.0"
 )
 
 // Options configure a [Plugin].
 type Options struct {
-	// Secret is shared with the agent, in the Standard Webhooks format (whsec_<base64>).
+	// Secret is shared with the connector, in the Standard Webhooks format (whsec_<base64>).
 	// Requests with a missing, invalid or stale (over five minutes) signature are rejected.
 	Secret string
 	// BasePath is the mount path of the plugin in your application, for example /aviato.
 	BasePath string
-	// HTTPClient is used to call the agent's Data API; defaults to http.DefaultClient.
+	// HTTPClient is used to call the connector's Data API; defaults to http.DefaultClient.
 	HTTPClient *http.Client
 	// FileTTL is how long file results stay downloadable; defaults to five minutes.
 	FileTTL time.Duration
@@ -133,7 +133,7 @@ func WithEnumValues(values ...string) FieldOption {
 	return func(c *computedDef) { c.enumValues = values }
 }
 
-// WithEmulatedFilterSort lets the agent sort and filter on the field by computing it in
+// WithEmulatedFilterSort lets the connector sort and filter on the field by computing it in
 // memory, within a bounded number of records.
 func WithEmulatedFilterSort() FieldOption {
 	return func(c *computedDef) { c.emulateFilterSort = true }
@@ -161,7 +161,7 @@ type searchDef struct {
 // SearchOption configures a search.
 type SearchOption func(*searchDef)
 
-// WithReplacedSearch makes the plugin search replace the agent's search entirely instead of
+// WithReplacedSearch makes the plugin search replace the connector's search entirely instead of
 // being combined with it.
 func WithReplacedSearch() SearchOption {
 	return func(s *searchDef) { s.replace = true }
@@ -207,13 +207,14 @@ func (r *registry[T]) get(key string) (T, bool) {
 	return r.items[position], true
 }
 
-// Plugin extends an Aviato agent. Register handlers with its methods, which return the plugin
+// Plugin extends an Aviato connector. Register handlers with its methods, which return the plugin
 // for chaining, then serve [Plugin.Handler]. Registration methods panic on invalid
 // definitions (a missing handler), like http.ServeMux does.
 type Plugin struct {
 	options  Options
 	basePath string
 	webhook  *standardwebhooks.Webhook
+	seen     *seenMessages
 	files    *fileStore
 
 	mu        sync.RWMutex
@@ -225,6 +226,7 @@ type Plugin struct {
 	writes    registry[writeDef]
 	charts    registry[chartDef]
 	summaries registry[summaryDef]
+	layouts   registry[layoutDef]
 	widgets   registry[WidgetDefinition]
 	relations []RelationHint
 	// collections are the custom collections of the registered datasources, by name.
@@ -240,6 +242,9 @@ func New(options Options) (*Plugin, error) {
 	if options.Secret == "" {
 		return nil, errors.New("aviato: Options.Secret is required")
 	}
+	if err := checkSecret(options.Secret); err != nil {
+		return nil, err
+	}
 	webhook, err := standardwebhooks.NewWebhook(options.Secret)
 	if err != nil {
 		return nil, fmt.Errorf("aviato: invalid secret: %w", err)
@@ -254,6 +259,7 @@ func New(options Options) (*Plugin, error) {
 		options:  options,
 		basePath: strings.TrimRight(options.BasePath, "/"),
 		webhook:  webhook,
+		seen:     newSeenMessages(),
 		files:    newFileStore(options.FileTTL),
 	}, nil
 }
@@ -364,7 +370,7 @@ func (p *Plugin) Chart(name, collection string, compute ChartFunc) *Plugin {
 	return p
 }
 
-// RelationHints declares relations the agent cannot introspect from the database. See the
+// RelationHints declares relations the connector cannot introspect from the database. See the
 // gormhints package to derive them from GORM models.
 func (p *Plugin) RelationHints(hints ...RelationHint) *Plugin {
 	p.mu.Lock()
@@ -373,7 +379,7 @@ func (p *Plugin) RelationHints(hints ...RelationHint) *Plugin {
 	return p
 }
 
-// Manifest declares what the plugin provides, as sent to the agent.
+// Manifest declares what the plugin provides, as sent to the connector.
 func (p *Plugin) Manifest() (*pluginv1.Manifest, error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
@@ -431,6 +437,13 @@ func (p *Plugin) Manifest() (*pluginv1.Manifest, error) {
 			return nil, fmt.Errorf("summary %s: %w", summary.collection, err)
 		}
 		manifest.Summaries = append(manifest.Summaries, &pluginv1.SummaryDefinition{Collection: summary.collection, Document: document})
+	}
+	for _, layout := range p.layouts.items {
+		value, err := toStruct(layout.layout)
+		if err != nil {
+			return nil, fmt.Errorf("layout %s: %w", layout.collection, err)
+		}
+		manifest.Layouts = append(manifest.Layouts, &pluginv1.LayoutDefinition{Collection: layout.collection, Layout: value})
 	}
 	for _, chart := range p.charts.items {
 		manifest.Charts = append(manifest.Charts, &pluginv1.ChartDefinition{Name: chart.name, Collection: chart.collection})

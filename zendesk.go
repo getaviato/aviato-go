@@ -6,8 +6,8 @@ import (
 	"sync"
 )
 
-// ZendeskPluginOptions references an agent-local OAuth token and a Zendesk subdomain label.
-// The agent verifies that the token has only read scopes before loading data.
+// ZendeskPluginOptions references a connector-local OAuth token and a Zendesk subdomain label.
+// The connector verifies that the token has only read scopes before loading data.
 type ZendeskPluginOptions struct {
 	Subdomain     string
 	CredentialEnv string
@@ -40,7 +40,7 @@ type ZendeskPlugin struct {
 var _ IntegrationPlugin = (*ZendeskPlugin)(nil)
 var zendeskSubdomainPattern = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$`)
 
-// NewZendeskPlugin configures a tenant and an agent-local OAuth credential reference.
+// NewZendeskPlugin configures a tenant and a connector-local OAuth credential reference.
 func NewZendeskPlugin(options ZendeskPluginOptions) (*ZendeskPlugin, error) {
 	if !options.ReadOnly || !credentialEnvPattern.MatchString(options.CredentialEnv) || !zendeskSubdomainPattern.MatchString(options.Subdomain) {
 		return nil, fmt.Errorf("zendesk requires a subdomain label and read-only OAuth credential environment variable")

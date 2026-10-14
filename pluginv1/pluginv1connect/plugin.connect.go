@@ -95,7 +95,7 @@ const (
 
 // PluginServiceClient is a client for the aviato.plugin.v1.PluginService service.
 type PluginServiceClient interface {
-	// Declares what the plugin provides. Called at agent start and when the SDK reports a change.
+	// Declares what the plugin provides. Called at connector start and when the SDK reports a change.
 	GetManifest(context.Context, *connect.Request[pluginv1.GetManifestRequest]) (*connect.Response[pluginv1.GetManifestResponse], error)
 	// Resolves the dynamic parts of an action form (visibility, defaults, choices, …).
 	ResolveForm(context.Context, *connect.Request[pluginv1.ResolveFormRequest]) (*connect.Response[pluginv1.ResolveFormResponse], error)
@@ -238,7 +238,7 @@ func (c *pluginServiceClient) ComputeChart(ctx context.Context, req *connect.Req
 
 // PluginServiceHandler is an implementation of the aviato.plugin.v1.PluginService service.
 type PluginServiceHandler interface {
-	// Declares what the plugin provides. Called at agent start and when the SDK reports a change.
+	// Declares what the plugin provides. Called at connector start and when the SDK reports a change.
 	GetManifest(context.Context, *connect.Request[pluginv1.GetManifestRequest]) (*connect.Response[pluginv1.GetManifestResponse], error)
 	// Resolves the dynamic parts of an action form (visibility, defaults, choices, …).
 	ResolveForm(context.Context, *connect.Request[pluginv1.ResolveFormRequest]) (*connect.Response[pluginv1.ResolveFormResponse], error)

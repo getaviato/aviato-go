@@ -14,7 +14,7 @@ import (
 // RelationHintsFromGORM parses models (pointers to GORM model structs) with gorm's schema
 // parser and returns their belongs-to, has-one and has-many relations as relation hints.
 // Collections are table names and relation names the snake_case field names, following gorm's
-// default naming strategy. Many-to-many and polymorphic relations are skipped: the agent
+// default naming strategy. Many-to-many and polymorphic relations are skipped: the connector
 // introspects join tables itself.
 //
 //	hints, err := gormhints.RelationHintsFromGORM(&Customer{}, &Invoice{})

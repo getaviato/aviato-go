@@ -1,11 +1,11 @@
 # Aviato Go SDK
 
-Extend an Aviato agent with custom **actions**, **computed fields**, **hooks**, **segments**,
+Extend an Aviato connector with custom **actions**, **computed fields**, **hooks**, **segments**,
 **search**, **write overrides**, **charts** and **custom datasources** written in Go.
 
-The agent calls your plugin over HTTP (ConnectRPC, JSON encoding) and signs every request with
+The connector calls your plugin over HTTP (ConnectRPC, JSON encoding) and signs every request with
 [Standard Webhooks](https://www.standardwebhooks.com/). Your code reads and writes records
-through the agent's Data API, under the caller's permissions and audit trail. It never queries
+through the connector's Data API, under the caller's permissions and audit trail. It never queries
 the database directly.
 
 ## Install
@@ -14,8 +14,8 @@ the database directly.
 go get github.com/getaviato/aviato-go
 ```
 
-Requires Go 1.25+. Connect the plugin to an existing Aviato agent. The SDK does not
-include the agent binary; automatic downloads require a working release URL.
+Requires Go 1.25+. Connect the plugin to an existing Aviato connector. The SDK does not
+include the connector binary; automatic downloads require a working release URL.
 
 ## Define a plugin
 
@@ -23,7 +23,7 @@ include the agent binary; automatic downloads require a working release URL.
 import aviato "github.com/getaviato/aviato-go"
 
 plugin := aviato.MustNew(aviato.Options{
-    Secret:   os.Getenv("AVIATO_PLUGIN_SECRET"), // whsec_…, shared with the agent
+    Secret:   os.Getenv("AVIATO_PLUGIN_SECRET"), // whsec_…, shared with the connector
     BasePath: "/aviato",
 })
 
@@ -32,7 +32,7 @@ plugin.Action("customers", "Refund last invoice", aviato.ScopeSingle,
         if a.StringValue("reason") == "" {
             return a.Error("A reason is required"), nil
         }
-        customers, err := a.Records(ctx) // read through the agent with the caller's permissions
+        customers, err := a.Records(ctx) // read through the connector with the caller's permissions
         if err != nil {
             return nil, err
         }
@@ -65,7 +65,7 @@ plugin.Hook("customers", aviato.Before, aviato.HookUpdate,
 ```
 
 The other registrations are `Segment`, `Search`, `WriteOverride`, `Chart` and `RelationHints`.
-Actions can return `Success`, `Error`, `HTML`, `File` (served once to the agent from
+Actions can return `Success`, `Error`, `HTML`, `File` (served once to the connector from
 `GET <basePath>/files/{ref}`), `Redirect` or `Webhook`. They take the options `WithDescription`,
 `WithFormUI`, `WithGeneratesFile` and `WithFormResolver`, which makes the form dynamic.
 `a.Data` is the full Data API client (`List`, `Get`, `Create`, `Update`, `Delete`).
@@ -79,7 +79,7 @@ plugin.RelationHints(hints...)
 
 ## Serve custom collections
 
-Data the agent cannot reach through a database driver (an internal API, a SaaS, a file) can be
+Data the connector cannot reach through a database driver (an internal API, a SaaS, a file) can be
 served by your code as custom collections, under the same roles, row scopes, masking and audit
 trail as database collections:
 
@@ -91,7 +91,7 @@ plugin.Datasource(aviato.Datasource{
             {Name: "id", Type: "number", ReadOnly: true, NotNull: true},
             {Name: "subject", Type: "string", NotNull: true},
         },
-        // What List does itself; the agent does the rest in memory.
+        // What List does itself; the connector does the rest in memory.
         Capabilities: aviato.Capabilities{FilterOperators: []string{"eq", "in"}, Sort: true, Count: true},
     }},
     List: func(ctx context.Context, d *aviato.DatasourceContext, q aviato.DatasourceQuery) (aviato.DatasourcePage, error) {
@@ -108,7 +108,7 @@ plugin.Datasource(aviato.Datasource{
 ```
 
 `Get` (defaults to a lookup through `List`), `Create`, `Update` and `Delete` are optional. For slow
-sources, `Strategy: aviato.ReplicationStrategy` with a `ListChanges` function lets the agent keep
+sources, `Strategy: aviato.ReplicationStrategy` with a `ListChanges` function lets the connector keep
 a copy, refreshed every `ReplicationInterval` and on demand with
 `plugin.RefreshReplica(ctx, "tickets", dataURL)`. See
 [the custom datasources guide](../../docs/guides/custom-datasources.md).
@@ -133,39 +133,70 @@ echoadapter.Mount(e, plugin) // *echo.Echo or *echo.Group
 Requests without a valid signature, or with one older than five minutes, get HTTP 401 before
 their body is decoded.
 
-## Run the agent
+## Run the connector
 
-Download the agent binary for your platform and point it at your plugin with the same secret:
+Download the connector binary for your platform and point it at your plugin with the same secret:
 
 ```sh
-go run github.com/getaviato/aviato-go/cmd/aviato-agent-install@latest -out bin/aviato-agent
+go run github.com/getaviato/aviato-go/cmd/aviato-connector-install@latest -out bin/aviato-connector
 ```
 
 Use `-version v1.2.3` to pin a release, `-sha256` to verify the download, and `-url` (or
-`AVIATO_AGENT_URL_TEMPLATE`) to download from a mirror. The URL template takes the placeholders
+`AVIATO_CONNECTOR_URL_TEMPLATE`) to download from a mirror. The URL template takes the placeholders
 `{release}`, `{version}`, `{os}`, `{arch}` and `{ext}`.
+
+### Constants for collection and field names
+
+The connector generates a constant for each collection and field of your database, so the compiler
+catches a misspelled name:
+
+```sh
+bin/aviato-connector typegen --out internal/aviatoschema/schema.go
+```
+
+```go
+plugin.Action(aviatoschema.Orders, "Refund", aviato.ScopeSingle, refund)
+plugin.WriteOverride(aviatoschema.Customers, aviatoschema.CustomersPlan, writePlan)
+```
+
+Run it again after each migration (`--check` fails in CI when the file is out of date). During
+development, `bin/aviato-connector dev` reloads the plugin's manifest every second, so a restarted
+plugin's changes appear without restarting the connector.
 
 ## Test your handlers
 
-`aviatotest` calls your handlers with a fake caller, without an agent. It also serves an
+`aviatotest` calls your handlers with a fake caller, without a connector. It also serves an
 in-memory Data API that you seed with records:
 
 ```go
 func TestRefund(t *testing.T) {
     h := aviatotest.New(t, plugin,
         aviatotest.WithRecords("customers", aviato.Record{"id": "42", "name": "Acme"}))
+    ctx := context.Background()
 
-    result, err := h.Execute(context.Background(), "customers", "Refund last invoice",
+    result, err := h.ExecuteAction(ctx, "customers", "Refund last invoice",
         aviatotest.Target{RecordIDs: []string{"42"}, Values: map[string]any{"reason": "Duplicate"}})
     require.NoError(t, err)
     assert.Equal(t, aviato.Success("Refunded 42", "invoices"), result)
-    // h.Data().Records("customers") shows what the handler wrote.
+    h.Data().AssertUpdated(t, "customers", "42", aviato.Record{"refunded": true})
+
+    viewer := aviatotest.DefaultCaller()
+    viewer.Role = "viewer"
+    result, err = h.ActingAs(viewer).ExecuteAction(ctx, "customers", "Refund last invoice",
+        aviatotest.Target{RecordIDs: []string{"42"}})
+    require.NoError(t, err)
+    assert.Equal(t, aviato.Error("Only admins can refund"), result)
 }
 ```
 
-The harness also offers `ResolveForm`, `Compute`, `RunHook`, `WriteField`, `Segment`, `Search`,
-`Chart`, and for custom datasources `ListCustomRecords`, `GetCustomRecord`, `CreateCustomRecord`,
-`UpdateCustomRecord`, `DeleteCustomRecord` and `ListChanges`. Values go through JSON as they do on the wire, so numbers arrive as `float64`.
+The harness also offers `ResolveForm`, `ComputeField`, `RunHooks`, `WriteField`,
+`ResolveSegment`, `Search`, `ComputeChart`, and for custom datasources `ListCustomRecords`,
+`GetCustomRecord`, `CreateCustomRecord`, `UpdateCustomRecord`, `DeleteCustomRecord` and
+`ListChanges`; the TypeScript and Laravel SDKs use the same names. `h.Data()` asserts writes with
+`AssertCreated`, `AssertUpdated`, `AssertDeleted` and `AssertNothingWritten`, and lists them with
+`Writes()` and `Records(collection)`. The fake Data API filters with equality, `$eq`, `$ne` and
+`$in`; other operators fail. Values go through JSON as they do on the wire, so numbers arrive as
+`float64`. `Execute`, `Compute`, `RunHook`, `Segment` and `Chart` remain as deprecated aliases.
 
 ## Custom summaries and forms
 
@@ -178,12 +209,33 @@ the data schema in `WithForm(schema)` and pass the layout through
 The [custom UI guide](https://docs.getaviato.com/guides/custom-ui) covers metric
 strips, property rows, reusable components, local state, field presets, and action
 buttons. Rendering uses Aviato's native design system without customer scripts or
-iframes. The agent still enforces permissions, validation, approvals, and auditing.
+iframes. The connector still enforces permissions, validation, approvals, and auditing.
+
+## Collection layouts
+
+`plugin.Layout(collection, layout)` declares how a collection looks in the back-office:
+label, icon, field order and settings, search fields, default sort and virtual relations.
+It replaces the layout edited in the dashboard, which then shows it read-only:
+
+```go
+plugin.Layout("customers", map[string]any{
+	"label":        "Clients",
+	"fieldOrder":   []any{"name", "email", "plan"},
+	"fields":       map[string]any{"plan": map[string]any{"widget": "badge"}},
+	"searchFields": []any{"name", "email"},
+	"defaultSort":  "-created_at",
+})
+```
+
+See [Declare layouts in code](https://docs.getaviato.com/guides/custom-ui#declare-layouts-in-code).
 
 ## Development
 
 The protocol bindings in `pluginv1/` are generated from `packages/protocol/proto`. Regenerate
 them with `buf generate` (you need `protoc-gen-go` and `protoc-gen-connect-go` on your `PATH`).
+
+In the Aviato monorepo, `mise install` at the root provides Go and golangci-lint at the
+versions CI uses.
 
 ```sh
 pnpm exec nx run @aviato/sdk-go:test               # go test ./...
@@ -199,9 +251,9 @@ MIT. See [LICENSE](LICENSE).
 
 Use the typed `StripePlugin` implementation of `IntegrationPlugin` to register read-only
 Stripe customer, subscription and invoice widgets with a local ID
-column or a `belongsTo` relation. Credentials live in the **customer agent environment**;
+column or a `belongsTo` relation. Credentials live in the **customer connector environment**;
 SDK declarations contain only the environment variable name. The browser calls the
-customer agent directly, and provider data does not pass through Aviato infrastructure.
+customer connector directly, and provider data does not pass through Aviato infrastructure.
 
 See the [provider widget guide](https://docs.getaviato.com/docs/integrations/widgets)
 for registration examples and exact key permissions. Restricted key prefixes do not prove
@@ -223,12 +275,12 @@ if err := plugin.Use(zendesk); err != nil { return err }
 ```
 
 The typed integration also supports user profiles and individual tickets. Bind to a
-local ID column or one belongsTo relation. Install a customer agent with Zendesk
+local ID column or one belongsTo relation. Install a customer connector with Zendesk
 support before using these APIs. These examples require core SDK 0.3.0 (and NestJS adapter 0.2.0 when used).
-SDK releases do not publish agent binaries.
+SDK releases do not publish connector binaries.
 
-Store the OAuth token on the **customer agent**, with `users:read` / `tickets:read`
-scopes. Before each read, the agent verifies actual scopes and rejects write-enabled
+Store the OAuth token on the **customer connector**, with `users:read` / `tickets:read`
+scopes. Before each read, the connector verifies actual scopes and rejects write-enabled
 tokens. Only the subdomain label and credential environment-variable name belong
 in SDK configuration. No provider credentials or responses pass through Aviato's
 control plane. See the [Zendesk guide](https://docs.getaviato.com/integrations/zendesk)

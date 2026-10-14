@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-// StripePluginOptions refers to a restricted key in the customer agent environment.
+// StripePluginOptions refers to a restricted key in the customer connector environment.
 // ReadOnly confirms the operator has configured Read/None permissions in Stripe.
 type StripePluginOptions struct {
 	CredentialEnv string
@@ -45,7 +45,7 @@ type StripePlugin struct {
 
 var _ IntegrationPlugin = (*StripePlugin)(nil)
 
-// NewStripePlugin configures a typed integration with an agent-local credential reference.
+// NewStripePlugin configures a typed integration with a connector-local credential reference.
 func NewStripePlugin(options StripePluginOptions) (*StripePlugin, error) {
 	if !options.ReadOnly || !credentialEnvPattern.MatchString(options.CredentialEnv) {
 		return nil, fmt.Errorf("stripe requires a read-only credential environment variable")

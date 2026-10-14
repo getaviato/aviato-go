@@ -94,19 +94,19 @@ func TestExecute(t *testing.T) {
 	h := aviatotest.New(t, plugin())
 	ctx := context.Background()
 
-	result, err := h.Execute(ctx, "customers", "Refund last invoice", aviatotest.Target{RecordIDs: []string{"42"}, Values: map[string]any{"reason": "Duplicate"}})
+	result, err := h.ExecuteAction(ctx, "customers", "Refund last invoice", aviatotest.Target{RecordIDs: []string{"42"}, Values: map[string]any{"reason": "Duplicate"}})
 	require.NoError(t, err)
 	assert.Equal(t, aviato.Success("Refunded 42", "invoices"), result)
 
-	result, err = h.Execute(ctx, "customers", "Refund last invoice", aviatotest.Target{RecordIDs: []string{"42"}})
+	result, err = h.ExecuteAction(ctx, "customers", "Refund last invoice", aviatotest.Target{RecordIDs: []string{"42"}})
 	require.NoError(t, err)
 	assert.Equal(t, aviato.Error("A reason is required"), result)
 
-	result, err = h.Execute(ctx, "customers", "Double", aviatotest.Target{RecordIDs: []string{"1"}, Values: map[string]any{"amount": 21}})
+	result, err = h.ExecuteAction(ctx, "customers", "Double", aviatotest.Target{RecordIDs: []string{"1"}, Values: map[string]any{"amount": 21}})
 	require.NoError(t, err)
 	assert.Equal(t, aviato.Success("42"), result, "values go through JSON like on the wire")
 
-	_, err = h.Execute(ctx, "customers", "Nope", aviatotest.Target{})
+	_, err = h.ExecuteAction(ctx, "customers", "Nope", aviatotest.Target{})
 	require.ErrorIs(t, err, aviato.ErrNotFound)
 	assert.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
 }
@@ -118,19 +118,78 @@ func TestFakeDataAPI(t *testing.T) {
 	)
 	ctx := context.Background()
 
-	result, err := h.Execute(ctx, "customers", "Archive", aviatotest.Target{RecordIDs: []string{"1"}})
+	result, err := h.ExecuteAction(ctx, "customers", "Archive", aviatotest.Target{RecordIDs: []string{"1"}})
 	require.NoError(t, err)
 	assert.Equal(t, aviato.Success("Archived 1"), result)
 	records := h.Data().Records("customers")
 	assert.Equal(t, aviato.Record{"id": "1", "name": "Acme", "archived": true, "archived_by": "u_42"}, records[0])
 	assert.Equal(t, aviato.Record{"id": "2", "name": "Globex"}, records[1])
 
-	result, err = h.Execute(ctx, "customers", "Export", aviatotest.Target{Filter: map[string]any{}})
+	result, err = h.ExecuteAction(ctx, "customers", "Export", aviatotest.Target{Filter: map[string]any{}})
 	require.NoError(t, err)
 	assert.Equal(t, aviato.File("customers.csv", "text/csv", []byte("name\nAcme\nGlobex\n")), result, "file results carry their content")
 
-	_, err = h.Execute(ctx, "customers", "Archive", aviatotest.Target{RecordIDs: []string{"404"}})
+	_, err = h.ExecuteAction(ctx, "customers", "Archive", aviatotest.Target{RecordIDs: []string{"404"}})
 	assert.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
+}
+
+// failures records assertion failures instead of failing the test.
+type failures struct {
+	testing.TB
+	messages []string
+}
+
+func (f *failures) Helper() {}
+
+func (f *failures) Errorf(format string, args ...any) {
+	f.messages = append(f.messages, fmt.Sprintf(format, args...))
+}
+
+func TestWriteAssertions(t *testing.T) {
+	h := aviatotest.New(t, plugin(), aviatotest.WithRecords("customers", aviato.Record{"id": "1", "name": "Acme"}, aviato.Record{"id": "2", "name": "Globex"}))
+	ctx := context.Background()
+	h.Data().AssertNothingWritten(t)
+
+	_, err := h.ExecuteAction(ctx, "customers", "Archive", aviatotest.Target{RecordIDs: []string{"2"}})
+	require.NoError(t, err)
+	h.Data().AssertUpdated(t, "customers", "2", aviato.Record{"archived": true})
+	h.Data().AssertUpdated(t, "customers", "2", nil)
+	assert.Equal(t, []aviatotest.Write{{Operation: "update", Collection: "customers", ID: "2", Values: aviato.Record{"archived": true, "archived_by": "u_test"}}}, h.Data().Writes())
+
+	recorded := &failures{TB: t}
+	h.Data().AssertUpdated(recorded, "customers", "1", nil)
+	h.Data().AssertCreated(recorded, "customers", nil)
+	h.Data().AssertDeleted(recorded, "customers", "2")
+	h.Data().AssertNothingWritten(recorded)
+	assert.Len(t, recorded.messages, 4)
+}
+
+func TestActingAs(t *testing.T) {
+	h := aviatotest.New(t, plugin(), aviatotest.WithRecords("customers", aviato.Record{"id": "1"}))
+	ctx := context.Background()
+	viewer := aviatotest.DefaultCaller()
+	viewer.UserID, viewer.Role = "u_viewer", "viewer"
+
+	chart, err := h.ActingAs(viewer).ComputeChart(ctx, "customersByPlan", nil)
+	require.NoError(t, err)
+	assert.Equal(t, "viewer", chart["role"])
+	assert.Equal(t, "admin", h.Caller().Role, "ActingAs returns a new harness")
+
+	_, err = h.ActingAs(viewer).ExecuteAction(ctx, "customers", "Archive", aviatotest.Target{RecordIDs: []string{"1"}})
+	require.NoError(t, err)
+	h.Data().AssertUpdated(t, "customers", "1", aviato.Record{"archived_by": "u_viewer"})
+}
+
+func TestFakeDataFilters(t *testing.T) {
+	h := aviatotest.New(t, plugin(), aviatotest.WithRecords("customers", aviato.Record{"id": "1", "name": "Acme"}, aviato.Record{"id": "2", "name": "Globex"}))
+	ctx := context.Background()
+
+	result, err := h.ExecuteAction(ctx, "customers", "Export", aviatotest.Target{Filter: map[string]any{"name": map[string]any{"$ne": "Acme"}}})
+	require.NoError(t, err)
+	assert.Equal(t, aviato.File("customers.csv", "text/csv", []byte("name\nGlobex\n")), result)
+
+	_, err = h.ExecuteAction(ctx, "customers", "Export", aviatotest.Target{Filter: map[string]any{"id": map[string]any{"$gt": 1}}})
+	assert.Equal(t, connect.CodeUnimplemented, connect.CodeOf(err))
 }
 
 func TestOtherHandlers(t *testing.T) {
@@ -141,18 +200,18 @@ func TestOtherHandlers(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{"confirm": true}, resolved.Values)
 
-	values, err := h.Compute(ctx, "customers", "fullName", aviato.Record{"first_name": "Ada", "last_name": "Lovelace"}, aviato.Record{"first_name": "Alan", "last_name": "Turing"})
+	values, err := h.ComputeField(ctx, "customers", "fullName", aviato.Record{"first_name": "Ada", "last_name": "Lovelace"}, aviato.Record{"first_name": "Alan", "last_name": "Turing"})
 	require.NoError(t, err)
 	assert.Equal(t, []any{"Ada Lovelace", "Alan Turing"}, values)
 
-	hook, err := h.RunHook(ctx, "customers", aviato.Before, aviato.HookUpdate, aviatotest.Hook{RecordIDs: []string{"1"}, Values: map[string]any{"plan": "enterprise"}})
+	hook, err := h.RunHooks(ctx, "customers", aviato.Before, aviato.HookUpdate, aviatotest.Hook{RecordIDs: []string{"1"}, Values: map[string]any{"plan": "enterprise"}})
 	require.NoError(t, err)
 	assert.Equal(t, "Enterprise plans are set by sales", hook.Reject)
-	hook, err = h.RunHook(ctx, "customers", aviato.Before, aviato.HookUpdate, aviatotest.Hook{Values: map[string]any{"plan": "pro"}})
+	hook, err = h.RunHooks(ctx, "customers", aviato.Before, aviato.HookUpdate, aviatotest.Hook{Values: map[string]any{"plan": "pro"}})
 	require.NoError(t, err)
 	assert.Equal(t, aviato.HookResult{Values: map[string]any{"plan": "pro"}}, hook)
 
-	segment, err := h.Segment(ctx, "customers", "vip")
+	segment, err := h.ResolveSegment(ctx, "customers", "vip")
 	require.NoError(t, err)
 	filter, ok := segment.Filter()
 	assert.True(t, ok)
@@ -166,7 +225,7 @@ func TestOtherHandlers(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{"first_name": "Grace"}, patch)
 
-	chart, err := h.Chart(ctx, "customersByPlan", nil)
+	chart, err := h.ComputeChart(ctx, "customersByPlan", nil)
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{"mark": "bar", "role": "admin"}, chart, "the default caller is an admin")
 }

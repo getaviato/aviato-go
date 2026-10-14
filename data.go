@@ -10,7 +10,7 @@ import (
 	"github.com/getaviato/aviato-go/pluginv1/pluginv1connect"
 )
 
-// DataClient reads and writes records through the agent's Data API, under the caller's
+// DataClient reads and writes records through the connector's Data API, under the caller's
 // permissions and audit trail. Plugin code must use it instead of querying the database
 // directly. It authenticates with the invocation token of the call in progress, so it is only
 // valid while that call is being handled.
@@ -80,7 +80,7 @@ func (c *DataClient) List(ctx context.Context, collection string, options ListOp
 	return ListResult{Records: fromStructs(response.Msg.GetRecords()), Total: response.Msg.GetTotal()}, nil
 }
 
-// Get returns one record, or nil when the agent returned none.
+// Get returns one record, or nil when the connector returned none.
 func (c *DataClient) Get(ctx context.Context, collection, id string) (Record, error) {
 	response, err := c.client.Get(ctx, authorized(c, &pluginv1.GetRequest{Collection: collection, Id: id}))
 	if err != nil {

@@ -1,8 +1,8 @@
 {
     "name": "@aviato/sdk-go",
-    "version": "0.3.0",
+    "version": "0.6.0",
     "private": true,
-    "description": "Go SDK extending an Aviato agent with custom actions, computed fields, hooks and segments (module github.com/getaviato/aviato-go).",
+    "description": "Go SDK extending an Aviato connector with custom actions, computed fields, hooks and segments (module github.com/getaviato/aviato-go).",
     "nx": {
         "targets": {
             "test": {
@@ -13,7 +13,8 @@
                 "cache": true,
                 "inputs": [
                     "default",
-                    "{workspaceRoot}/packages/protocol/fixtures/ui*.json"
+                    "{workspaceRoot}/packages/protocol/fixtures/ui*.json",
+                    "{workspaceRoot}/packages/protocol/fixtures/layout*.json"
                 ]
             },
             "lint": {

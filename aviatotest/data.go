@@ -23,9 +23,10 @@ import (
 	"github.com/getaviato/aviato-go/pluginv1/pluginv1connect"
 )
 
-// FakeData is an in-memory Data API served over HTTP, standing in for the agent. Records are
-// identified by their "id" field. List supports equality and $in filters on top-level fields,
-// a single sort field (prefixed with - for descending), limit, offset and field selection.
+// FakeData is an in-memory Data API served over HTTP, standing in for the connector. Records are
+// identified by their "id" field. List supports equality, $eq, $ne and $in filters on top-level
+// fields (other operators fail), a single sort field (prefixed with - for descending), limit,
+// offset and field selection.
 type FakeData struct {
 	pluginv1connect.UnimplementedDataServiceHandler
 	server *httptest.Server
@@ -33,7 +34,16 @@ type FakeData struct {
 
 	mu          sync.Mutex
 	collections map[string][]aviato.Record
+	writes      []Write
 	nextID      int
+}
+
+// Write is a write a handler made through the Data API.
+type Write struct {
+	Operation  string // "create", "update" or "delete"
+	Collection string
+	ID         string
+	Values     aviato.Record
 }
 
 func newFakeData(tb testing.TB) *FakeData {
@@ -67,6 +77,85 @@ func (d *FakeData) Records(collection string) []aviato.Record {
 		records = append(records, maps.Clone(record))
 	}
 	return records
+}
+
+// Writes returns the writes handlers made, in order.
+func (d *FakeData) Writes() []Write {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	writes := make([]Write, 0, len(d.writes))
+	for _, write := range d.writes {
+		write.Values = maps.Clone(write.Values)
+		writes = append(writes, write)
+	}
+	return writes
+}
+
+// AssertCreated fails the test unless a record of collection was created with at least values.
+func (d *FakeData) AssertCreated(tb testing.TB, collection string, values aviato.Record) {
+	tb.Helper()
+	if !d.written("create", collection, nil, values) {
+		tb.Errorf("aviatotest: no %s record was created with %v", collection, values)
+	}
+}
+
+// AssertUpdated fails the test unless a record was updated with at least values.
+func (d *FakeData) AssertUpdated(tb testing.TB, collection, id string, values aviato.Record) {
+	tb.Helper()
+	if !d.written("update", collection, &id, values) {
+		tb.Errorf("aviatotest: %s/%s was not updated with %v", collection, id, values)
+	}
+}
+
+// AssertDeleted fails the test unless a record was deleted.
+func (d *FakeData) AssertDeleted(tb testing.TB, collection, id string) {
+	tb.Helper()
+	if !d.written("delete", collection, &id, nil) {
+		tb.Errorf("aviatotest: %s/%s was not deleted", collection, id)
+	}
+}
+
+// AssertNothingWritten fails the test if handlers wrote records through the Data API.
+func (d *FakeData) AssertNothingWritten(tb testing.TB) {
+	tb.Helper()
+	if writes := d.Writes(); len(writes) > 0 {
+		tb.Errorf("aviatotest: records were written through the Data API: %v", writes)
+	}
+}
+
+func (d *FakeData) written(operation, collection string, id *string, values aviato.Record) bool {
+	expected, err := normalize(values)
+	if err != nil {
+		return false
+	}
+	for _, write := range d.Writes() {
+		if write.Operation != operation || write.Collection != collection || (id != nil && write.ID != *id) {
+			continue
+		}
+		if !containsValues(write.Values, expected) {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
+func containsValues(record, expected aviato.Record) bool {
+	for field, value := range expected {
+		actual, ok := record[field]
+		if !ok || !same(actual, value) {
+			return false
+		}
+	}
+	return true
+}
+
+func (d *FakeData) record(operation, collection, id string, values aviato.Record) {
+	normalized, _ := normalize(values)
+	if normalized == nil {
+		normalized = aviato.Record{}
+	}
+	d.writes = append(d.writes, Write{Operation: operation, Collection: collection, ID: id, Values: normalized})
 }
 
 func (d *FakeData) authenticate() connect.UnaryInterceptorFunc {
@@ -114,22 +203,45 @@ func toStruct(record aviato.Record) (*structpb.Struct, error) {
 	return result, nil
 }
 
+// same compares JSON values loosely, as a filter does (42 matches "42").
+func same(left, right any) bool {
+	return fmt.Sprint(left) == fmt.Sprint(right)
+}
+
+func compare(left, right any) int {
+	leftNumber, leftOK := left.(float64)
+	rightNumber, rightOK := right.(float64)
+	if leftOK && rightOK {
+		return cmp.Compare(leftNumber, rightNumber)
+	}
+	return cmp.Compare(fmt.Sprint(left), fmt.Sprint(right))
+}
+
 func matches(record aviato.Record, filter map[string]any) (bool, error) {
 	for field, expected := range filter {
-		if operators, ok := expected.(map[string]any); ok {
-			for operator, operand := range operators {
-				if operator != "$in" {
-					return false, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("aviatotest: filter operator %s is not supported by the fake Data API", operator))
-				}
-				candidates, _ := operand.([]any)
-				if !slices.ContainsFunc(candidates, func(candidate any) bool { return fmt.Sprint(candidate) == fmt.Sprint(record[field]) }) {
-					return false, nil
-				}
+		operators, ok := expected.(map[string]any)
+		if !ok {
+			if !same(expected, record[field]) {
+				return false, nil
 			}
 			continue
 		}
-		if fmt.Sprint(expected) != fmt.Sprint(record[field]) {
-			return false, nil
+		for operator, operand := range operators {
+			var matched bool
+			switch operator {
+			case "$eq":
+				matched = same(operand, record[field])
+			case "$ne":
+				matched = !same(operand, record[field])
+			case "$in":
+				candidates, _ := operand.([]any)
+				matched = slices.ContainsFunc(candidates, func(candidate any) bool { return same(candidate, record[field]) })
+			default:
+				return false, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("aviatotest: filter operator %s is not supported by the fake Data API", operator))
+			}
+			if !matched {
+				return false, nil
+			}
 		}
 	}
 	return true, nil
@@ -153,7 +265,7 @@ func (d *FakeData) List(_ context.Context, request *connect.Request[pluginv1.Lis
 	if sort := message.GetSort(); sort != "" {
 		field, descending := strings.TrimPrefix(sort, "-"), strings.HasPrefix(sort, "-")
 		slices.SortStableFunc(selected, func(a, b aviato.Record) int {
-			order := cmp.Compare(fmt.Sprint(a[field]), fmt.Sprint(b[field]))
+			order := compare(a[field], b[field])
 			if descending {
 				return -order
 			}
@@ -171,6 +283,9 @@ func (d *FakeData) List(_ context.Context, request *connect.Request[pluginv1.Lis
 		projected := record
 		if fields := message.GetFields(); len(fields) > 0 {
 			projected = aviato.Record{}
+			if id, ok := record["id"]; ok {
+				projected["id"] = id
+			}
 			for _, field := range fields {
 				if value, ok := record[field]; ok {
 					projected[field] = value
@@ -212,6 +327,7 @@ func (d *FakeData) Create(_ context.Context, request *connect.Request[pluginv1.C
 	}
 	collection := request.Msg.GetCollection()
 	d.collections[collection] = append(d.collections[collection], record)
+	d.record("create", collection, idOf(record), record)
 	converted, err := toStruct(record)
 	if err != nil {
 		return nil, err
@@ -230,6 +346,7 @@ func (d *FakeData) Update(_ context.Context, request *connect.Request[pluginv1.U
 	}
 	record := d.collections[collection][index]
 	maps.Copy(record, request.Msg.GetValues().AsMap())
+	d.record("update", collection, request.Msg.GetId(), request.Msg.GetValues().AsMap())
 	converted, err := toStruct(record)
 	if err != nil {
 		return nil, err
@@ -247,5 +364,6 @@ func (d *FakeData) Delete(_ context.Context, request *connect.Request[pluginv1.D
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("no %s record %s", collection, request.Msg.GetId()))
 	}
 	d.collections[collection] = slices.Delete(d.collections[collection], index, index+1)
+	d.record("delete", collection, request.Msg.GetId(), nil)
 	return connect.NewResponse(&pluginv1.DeleteResponse{}), nil
 }

@@ -1,5 +1,5 @@
-// Package agentinstall downloads the Aviato agent binary for a platform.
-package agentinstall
+// Package connectorinstall downloads the Aviato connector binary for a platform.
+package connectorinstall
 
 import (
 	"context"
@@ -14,9 +14,9 @@ import (
 	"strings"
 )
 
-// DefaultURLTemplate points at the GitHub releases of the agent. Placeholders: {release}
+// DefaultURLTemplate points at the GitHub releases of the connector. Placeholders: {release}
 // ("latest/download" or "download/<version>"), {version}, {os}, {arch} and {ext}.
-const DefaultURLTemplate = "https://github.com/getaviato/aviato/releases/{release}/aviato-agent-{os}-{arch}{ext}"
+const DefaultURLTemplate = "https://github.com/getaviato/aviato/releases/{release}/aviato-connector-{os}-{arch}{ext}"
 
 // Options configure [Install].
 type Options struct {
@@ -35,7 +35,7 @@ type Options struct {
 	Client *http.Client
 }
 
-// Platform maps Go platform names to the agent's release asset names.
+// Platform maps Go platform names to the connector's release asset names.
 func Platform(goos, goarch string) (osName, arch, ext string, err error) {
 	switch goos + "/" + goarch {
 	case "linux/amd64":
@@ -47,11 +47,11 @@ func Platform(goos, goarch string) (osName, arch, ext string, err error) {
 	case "windows/amd64":
 		return "windows", "x64", ".exe", nil
 	default:
-		return "", "", "", fmt.Errorf("no agent binary for %s/%s (available: linux/amd64, linux/arm64, darwin/arm64, windows/amd64)", goos, goarch)
+		return "", "", "", fmt.Errorf("no connector binary for %s/%s (available: linux/amd64, linux/arm64, darwin/arm64, windows/amd64)", goos, goarch)
 	}
 }
 
-// URL resolves the download URL of the agent binary.
+// URL resolves the download URL of the connector binary.
 func URL(template, version, goos, goarch string) (string, error) {
 	osName, arch, ext, err := Platform(goos, goarch)
 	if err != nil {
@@ -70,7 +70,7 @@ func URL(template, version, goos, goarch string) (string, error) {
 	return strings.NewReplacer("{release}", release, "{version}", version, "{os}", osName, "{arch}", arch, "{ext}", ext).Replace(template), nil
 }
 
-// Install downloads the agent binary to options.Output, atomically, and makes it executable.
+// Install downloads the connector binary to options.Output, atomically, and makes it executable.
 func Install(ctx context.Context, options Options) (string, error) {
 	if options.Output == "" {
 		return "", errors.New("an output path is required")
@@ -98,7 +98,7 @@ func Install(ctx context.Context, options Options) (string, error) {
 	if err := os.MkdirAll(filepath.Dir(options.Output), 0o755); err != nil { //nolint:gosec // A bin directory is world-readable.
 		return "", err
 	}
-	temporary, err := os.CreateTemp(filepath.Dir(options.Output), ".aviato-agent-*")
+	temporary, err := os.CreateTemp(filepath.Dir(options.Output), ".aviato-connector-*")
 	if err != nil {
 		return "", err
 	}
@@ -116,7 +116,7 @@ func Install(ctx context.Context, options Options) (string, error) {
 			return "", fmt.Errorf("checksum mismatch for %s: expected %s, got %s", url, options.SHA256, actual)
 		}
 	}
-	if err := os.Chmod(temporary.Name(), 0o755); err != nil { //nolint:gosec // The agent binary must be executable.
+	if err := os.Chmod(temporary.Name(), 0o755); err != nil { //nolint:gosec // The connector binary must be executable.
 		return "", err
 	}
 	if err := os.Rename(temporary.Name(), options.Output); err != nil {

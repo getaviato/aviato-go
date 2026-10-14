@@ -18,7 +18,7 @@ type datasourceService struct {
 
 var _ pluginv1connect.DatasourceServiceHandler = (*datasourceService)(nil)
 
-// datasourceContext builds the handler context; the caller is nil for the agent's own calls.
+// datasourceContext builds the handler context; the caller is nil for the connector's own calls.
 func datasourceContext(caller *pluginv1.Caller, collection string) *DatasourceContext {
 	d := &DatasourceContext{Collection: collection}
 	if caller.GetUserId() != "" || caller.GetRequestId() != "" {

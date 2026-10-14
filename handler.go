@@ -70,7 +70,7 @@ func (p *Plugin) verified(next http.Handler) http.Handler {
 			http.Error(w, "Cannot read request body", http.StatusBadRequest)
 			return
 		}
-		if err := p.webhook.Verify(body, r.Header); err != nil {
+		if !p.accepted(r, body) {
 			writeUnauthenticated(w, "Invalid plugin request signature")
 			return
 		}
@@ -80,8 +80,18 @@ func (p *Plugin) verified(next http.Handler) http.Handler {
 	})
 }
 
+// accepted checks the Standard Webhooks signature, that it was made for this endpoint, and that
+// the message was not seen before.
+func (p *Plugin) accepted(r *http.Request, body []byte) bool {
+	if err := p.webhook.Verify(body, r.Header); err != nil {
+		return false
+	}
+	id := r.Header.Get("webhook-id")
+	return targetMatches(id, r.Method, r.URL.EscapedPath()) && p.seen.add(id)
+}
+
 func (p *Plugin) serveFile(w http.ResponseWriter, r *http.Request) {
-	if err := p.webhook.Verify(nil, r.Header); err != nil {
+	if !p.accepted(r, nil) {
 		writeUnauthenticated(w, "Invalid signature")
 		return
 	}
@@ -101,7 +111,7 @@ func (p *Plugin) serveFile(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(file.Content)
 }
 
-// fileStore keeps file results until the agent downloads them, once, or they expire.
+// fileStore keeps file results until the connector downloads them, once, or they expire.
 type fileStore struct {
 	ttl   time.Duration
 	mu    sync.Mutex

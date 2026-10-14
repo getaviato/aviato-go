@@ -1,0 +1,14 @@
+{
+    "label": "Customers",
+    "icon": "users",
+    "fieldOrder": ["name", "email", "plan", "mrr", "created_at"],
+    "fields": {
+        "email": { "label": "Email address", "widget": "email" },
+        "mrr": { "label": "MRR", "description": "Monthly recurring revenue", "widget": "currency", "currency": "EUR", "readOnly": true },
+        "plan": { "widget": "badge" },
+        "internal_notes": { "hidden": true }
+    },
+    "searchFields": ["name", "email"],
+    "defaultSort": "-created_at,name",
+    "relations": [{ "name": "owner", "kind": "belongsTo", "foreignKey": ["owner_id"], "target": "users", "targetKey": ["id"] }]
+}
