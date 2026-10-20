@@ -1,6 +1,6 @@
 {
     "name": "@aviato/sdk-go",
-    "version": "0.6.0",
+    "version": "0.7.0",
     "private": true,
     "description": "Go SDK extending an Aviato connector with custom actions, computed fields, hooks and segments (module github.com/getaviato/aviato-go).",
     "nx": {

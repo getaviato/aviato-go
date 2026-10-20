@@ -285,3 +285,23 @@ tokens. Only the subdomain label and credential environment-variable name belong
 in SDK configuration. No provider credentials or responses pass through Aviato's
 control plane. See the [Zendesk guide](https://docs.getaviato.com/integrations/zendesk)
 for all methods, permissions and release requirements.
+
+## Intercom contact widget
+
+```go
+intercom, err := aviato.NewIntercomPlugin(aviato.IntercomPluginOptions{
+    Region: "eu", CredentialEnv: "INTERCOM_WIDGET_TOKEN", ReadOnly: true,
+})
+if err != nil { return err }
+if _, err := intercom.Contact(aviato.IntercomContactWidget{
+    Collection: "customers", Name: "intercom",
+    ExternalID: aviato.RecordBinding{Field: "id"},
+}); err != nil { return err }
+if err := plugin.Use(intercom); err != nil { return err }
+```
+
+Set exactly one binding: `ExternalID` matches the Intercom `external_id` (your own user ID),
+`ContactID` is the Intercom contact ID. `Region` is exactly `us`, `eu` or `au`, never a URL.
+The widget is read-only and needs a customer connector with Intercom support; the access token
+lives on the connector, and only its environment-variable name belongs in SDK configuration.
+This requires Go SDK 0.7.0. Aviato cannot verify that the token is read-only; that depends on the Intercom app's permissions. See the [Intercom guide](https://docs.getaviato.com/integrations/intercom).

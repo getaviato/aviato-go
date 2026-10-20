@@ -27,7 +27,7 @@ const (
 	// SDKName is reported to the connector in the manifest.
 	SDKName = "github.com/getaviato/aviato-go"
 	// SDKVersion is reported to the connector in the manifest.
-	SDKVersion = "0.6.0"
+	SDKVersion = "0.7.0"
 )
 
 // Options configure a [Plugin].
