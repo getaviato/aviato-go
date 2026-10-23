@@ -14,8 +14,10 @@ the database directly.
 go get github.com/getaviato/aviato-go
 ```
 
-Requires Go 1.25+. Connect the plugin to an existing Aviato connector. The SDK does not
-include the connector binary; automatic downloads require a working release URL.
+Requires Go 1.25+. The SDK does not include the connector binary: install the
+`aviato` CLI (`brew install getaviato/tap/aviato` or
+`curl -fsSL https://getaviato.com/install.sh | sh`), or download it with
+`aviato-connector-install` (see [Run the connector](#run-the-connector)).
 
 ## Define a plugin
 
@@ -138,7 +140,7 @@ their body is decoded.
 Download the connector binary for your platform and point it at your plugin with the same secret:
 
 ```sh
-go run github.com/getaviato/aviato-go/cmd/aviato-connector-install@latest -out bin/aviato-connector
+go run github.com/getaviato/aviato-go/cmd/aviato-connector-install@latest -out bin/aviato
 ```
 
 Use `-version v1.2.3` to pin a release, `-sha256` to verify the download, and `-url` (or
@@ -151,7 +153,7 @@ The connector generates a constant for each collection and field of your databas
 catches a misspelled name:
 
 ```sh
-bin/aviato-connector typegen --out internal/aviatoschema/schema.go
+bin/aviato typegen --out internal/aviatoschema/schema.go
 ```
 
 ```go
@@ -160,7 +162,7 @@ plugin.WriteOverride(aviatoschema.Customers, aviatoschema.CustomersPlan, writePl
 ```
 
 Run it again after each migration (`--check` fails in CI when the file is out of date). During
-development, `bin/aviato-connector dev` reloads the plugin's manifest every second, so a restarted
+development, `bin/aviato dev` reloads the plugin's manifest every second, so a restarted
 plugin's changes appear without restarting the connector.
 
 ## Test your handlers

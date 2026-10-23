@@ -19,17 +19,21 @@ import (
 func TestURL(t *testing.T) {
 	url, err := connectorinstall.URL("", "", "linux", "amd64")
 	require.NoError(t, err)
-	assert.Equal(t, "https://github.com/getaviato/aviato/releases/latest/download/aviato-connector-linux-x64", url)
+	assert.Equal(t, "https://github.com/getaviato/connector/releases/latest/download/aviato-linux-x64", url)
 
 	url, err = connectorinstall.URL("", "v1.2.0", "windows", "amd64")
 	require.NoError(t, err)
-	assert.Equal(t, "https://github.com/getaviato/aviato/releases/download/v1.2.0/aviato-connector-windows-x64.exe", url)
+	assert.Equal(t, "https://github.com/getaviato/connector/releases/download/v1.2.0/aviato-windows-x64.exe", url)
 
 	url, err = connectorinstall.URL("https://mirror.example.com/{version}/{os}/{arch}/connector{ext}", "v1", "darwin", "arm64")
 	require.NoError(t, err)
 	assert.Equal(t, "https://mirror.example.com/v1/darwin/arm64/connector", url)
 
-	_, err = connectorinstall.URL("", "", "darwin", "amd64")
+	url, err = connectorinstall.URL("", "", "darwin", "amd64")
+	require.NoError(t, err)
+	assert.Equal(t, "https://github.com/getaviato/connector/releases/latest/download/aviato-darwin-x64", url)
+
+	_, err = connectorinstall.URL("", "", "windows", "arm64")
 	assert.Error(t, err, "unsupported platforms are reported")
 }
 

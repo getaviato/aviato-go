@@ -1,7 +1,7 @@
 // Command aviato-connector-install downloads the Aviato connector binary for the current (or given)
 // platform:
 //
-//	go run github.com/getaviato/aviato-go/cmd/aviato-connector-install@latest -out bin/aviato-connector
+//	go run github.com/getaviato/aviato-go/cmd/aviato-connector-install@latest -out bin/aviato
 //
 // The download URL is a template (-url or AVIATO_CONNECTOR_URL_TEMPLATE) with the placeholders
 // {release}, {version}, {os}, {arch} and {ext}, so the binary can come from a mirror.
@@ -32,7 +32,7 @@ func env(name, fallback string) string {
 }
 
 func main() {
-	defaultOutput := "bin/aviato-connector"
+	defaultOutput := "bin/aviato"
 	if runtime.GOOS == "windows" {
 		defaultOutput += ".exe"
 	}

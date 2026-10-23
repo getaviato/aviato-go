@@ -16,7 +16,7 @@ import (
 
 // DefaultURLTemplate points at the GitHub releases of the connector. Placeholders: {release}
 // ("latest/download" or "download/<version>"), {version}, {os}, {arch} and {ext}.
-const DefaultURLTemplate = "https://github.com/getaviato/aviato/releases/{release}/aviato-connector-{os}-{arch}{ext}"
+const DefaultURLTemplate = "https://github.com/getaviato/connector/releases/{release}/aviato-{os}-{arch}{ext}"
 
 // Options configure [Install].
 type Options struct {
@@ -42,12 +42,14 @@ func Platform(goos, goarch string) (osName, arch, ext string, err error) {
 		return "linux", "x64", "", nil
 	case "linux/arm64":
 		return "linux", "arm64", "", nil
+	case "darwin/amd64":
+		return "darwin", "x64", "", nil
 	case "darwin/arm64":
 		return "darwin", "arm64", "", nil
 	case "windows/amd64":
 		return "windows", "x64", ".exe", nil
 	default:
-		return "", "", "", fmt.Errorf("no connector binary for %s/%s (available: linux/amd64, linux/arm64, darwin/arm64, windows/amd64)", goos, goarch)
+		return "", "", "", fmt.Errorf("no connector binary for %s/%s (available: linux/amd64, linux/arm64, darwin/amd64, darwin/arm64, windows/amd64)", goos, goarch)
 	}
 }
 
